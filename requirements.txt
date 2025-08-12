@@ -3,7 +3,9 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 
 # HTTP client for upstream requests
-httpx==0.25.2
+httpx[http2]==0.25.2
+h2>=4.0.0
+httpcore[http2]>=1.0.0
 
 # Data validation and settings
 pydantic==2.11.7

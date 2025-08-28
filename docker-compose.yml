@@ -1,47 +1,19 @@
-version: "3.8"
-
 services:
   z2api:
     image: ghcr.io/oldjs/z2api:docker
     container_name: z2api-server
     ports:
-      - "8000:8000"
+      - "3002:8000"
     environment:
-      # 服务器设置
-      - HOST=${HOST:-0.0.0.0} # 服务器监听地址
-      - PORT=${PORT:-8000} # 服务器监听端口
-
-      # API Key for external authentication (OpenAI SDK compatible)
-      # 外部认证密钥 (与OpenAI SDK兼容)
-      - API_KEY=${API_KEY:-sk-z2api-key-2024} # 外部API认证密钥
-
-      # Content filtering settings (only applies to non-streaming responses)
-      # 内容过滤设置 (仅适用于非流式响应)
-      # Whether to show think tags in response (true/false)
-      # 是否在响应中显示思考标签 (true/false)
-      - SHOW_THINK_TAGS=${SHOW_THINK_TAGS:-false} # 是否显示思考标签
-
-      # Response mode settings
-      # 响应模式设置
-      # Default streaming mode (true/false)
-      # 默认流式模式 (true/false)
-      - DEFAULT_STREAM=${DEFAULT_STREAM:-false} # 默认流式模式
-
-      # Z.AI Tokens (comma-separated list of JWT tokens from z.ai)
-      # Z.AI令牌 (从z.ai获取的JWT令牌，逗号分隔)
-      # Get these from https://chat.z.ai by inspecting network requests
-      # 从 https://chat.z.ai 的网络请求中获取这些令牌
+      - HOST=${HOST:-0.0.0.0} # 监听地址
+      - PORT=${PORT:-8000} # 监听端口
+      - API_KEY=${API_KEY:-sk-z2api-key-2024} # 鉴权密钥
+      - SHOW_THINK_TAGS=${SHOW_THINK_TAGS:-false} # 思考标签
+      - DEFAULT_STREAM=${DEFAULT_STREAM:-false} # 流式
       - Z_AI_COOKIES=${Z_AI_COOKIES} # Z.AI的JWT令牌
+      - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-1000} # 每分钟最大请求数
+      - LOG_LEVEL=${LOG_LEVEL:-ERROR} # 日志级别
 
-      # Rate limiting
-      # 速率限制
-      - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-60} # 每分钟最大请求数
-
-      # Logging level (DEBUG, INFO, WARNING, ERROR)
-      # 日志级别 (DEBUG, INFO, WARNING, ERROR)
-      - LOG_LEVEL=${LOG_LEVEL:-INFO} # 日志级别
-
-      # Auto refresh settings (currently not implemented)
       # 自动刷新设置 (当前未实现)
       - AUTO_REFRESH_TOKENS=${AUTO_REFRESH_TOKENS:-false} # 是否自动刷新令牌
       - REFRESH_CHECK_INTERVAL=${REFRESH_CHECK_INTERVAL:-3600} # 刷新检查间隔(秒)
@@ -59,22 +31,22 @@ services:
       - z2api-network
 
   # 可选：添加Nginx反向代理
-  nginx:
-    image: nginx:alpine
-    container_name: z2api-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - z2api
-    restart: unless-stopped
-    networks:
-      - z2api-network
-    profiles:
-      - with-nginx
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: z2api-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - z2api
+  #   restart: unless-stopped
+  #   networks:
+  #     - z2api-network
+  #   profiles:
+  #     - with-nginx
 
 networks:
   z2api-network:

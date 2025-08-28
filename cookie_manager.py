@@ -63,7 +63,13 @@ class CookieManager:
     async def health_check(self, cookie: str) -> bool:
         """Check if a cookie is still valid"""
         try:
-            async with httpx.AsyncClient() as client:
+            # Use a shared client configuration for health checks
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0, read=5.0),
+                limits=httpx.Limits(max_connections=3, max_keepalive_connections=1, keepalive_expiry=15),
+                http2=False,
+                verify=False
+            ) as client:
                 # Use the same payload format as actual requests
                 import uuid
                 test_payload = {

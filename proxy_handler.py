@@ -24,18 +24,26 @@ logger = logging.getLogger(__name__)
 
 class ProxyHandler:
     def __init__(self):
-        # Configure httpx client for streaming support
+        # Configure httpx client with optimized resource limits
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(60.0, read=300.0),  # Longer read timeout for streaming
-            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
-            http2=True  # Enable HTTP/2 for better streaming performance
+            timeout=httpx.Timeout(30.0, read=60.0, connect=10.0, write=30.0),
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10, keepalive_expiry=30),
+            http2=False,  # Disable HTTP/2 to reduce connection overhead
+            verify=False   # Skip SSL verification to reduce overhead
         )
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.client.aclose()
+        # Ensure client is properly closed with explicit timeout
+        try:
+            if hasattr(self, 'client') and self.client:
+                await self.client.aclose()
+                # Force garbage collection of the client
+                del self.client
+        except Exception as e:
+            logger.error(f"Error closing client: {e}")
 
     def transform_content(self, content: str) -> str:
         """Transform content by replacing HTML tags and optionally removing think tags"""
@@ -208,13 +216,19 @@ class ProxyHandler:
     async def process_streaming_response(
         self, response: httpx.Response
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """Process streaming response from Z.AI - TRUE real-time processing"""
+        """Process streaming response with memory-efficient handling"""
         buffer = ""
+        MAX_BUFFER_SIZE = 65536  # 64KB buffer limit to prevent memory overflow
 
-        # Use aiter_text with small chunk size for real-time processing
-        async for chunk in response.aiter_text(chunk_size=1024):  # Small chunks for responsiveness
+        # Use aiter_text with controlled chunk size
+        async for chunk in response.aiter_text(chunk_size=2048):
             if not chunk:
                 continue
+
+            # Check buffer size to prevent memory overflow
+            if len(buffer) + len(chunk) > MAX_BUFFER_SIZE:
+                logger.warning("Buffer size limit reached, clearing buffer")
+                buffer = buffer[-32768:]  # Keep last 32KB
 
             buffer += chunk
 
@@ -222,6 +236,7 @@ class ProxyHandler:
             while "\n" in buffer:
                 line, buffer = buffer.split("\n", 1)
                 line = line.strip()
+                buffer = buffer.lstrip()  # Trim leading whitespace to reduce memory
 
                 if not line.startswith("data: "):
                     continue
@@ -245,18 +260,17 @@ class ProxyHandler:
                             status_code=400, detail=f"Upstream error: {error_detail}"
                         )
 
-                    # Clean up response data
+                    # Clean up response data to reduce memory
                     if parsed.get("data"):
-                        # Remove unwanted fields for cleaner processing
                         parsed["data"].pop("edit_index", None)
                         parsed["data"].pop("edit_content", None)
 
-                    # Yield immediately for real-time streaming
                     yield parsed
 
                 except json.JSONDecodeError as e:
-                    logger.debug(f"JSON decode error (skipping): {e}")
-                    continue  # Skip non-JSON lines
+                    buffer = ""  # Clear buffer on JSON errors
+                    logger.debug(f"JSON decode error (buffer cleared): {e}")
+                    continue
 
     async def handle_chat_completion(self, request: ChatCompletionRequest):
         """Handle chat completion request"""
@@ -276,19 +290,29 @@ class ProxyHandler:
                 },
             )
         else:
-            # For non-streaming responses, collect all streaming data first
+            # For non-streaming responses, collect with memory limits
             chunks = []
+            MAX_CONTENT_LENGTH = 1048576  # 1MB max content length
+            current_length = 0
+            
             async for chunk_data in self.stream_proxy_response(request):
                 if chunk_data.startswith("data: ") and not chunk_data.startswith("data: [DONE]"):
                     try:
                         chunk_json = json.loads(chunk_data[6:])
-                        if chunk_json.get("choices", [{}])[0].get("delta", {}).get("content"):
-                            chunks.append(chunk_json["choices"][0]["delta"]["content"])
+                        content = chunk_json.get("choices", [{}])[0].get("delta", {}).get("content")
+                        if content:
+                            # Check memory limits
+                            if current_length + len(content) > MAX_CONTENT_LENGTH:
+                                logger.warning("Content length limit reached, stopping collection")
+                                break
+                            chunks.append(content)
+                            current_length += len(content)
                     except:
                         continue
 
-            # Combine all content
+            # Combine all content and clear chunks list
             full_content = "".join(chunks)
+            chunks.clear()  # Explicitly clear to free memory
 
             # Return as non-streaming response
             import time
@@ -537,11 +561,17 @@ class ProxyHandler:
 
                     await cookie_manager.mark_cookie_success(cookie)
 
-                    # Process streaming response in real-time
+                    # Process streaming response with memory-efficient handling
                     buffer = ""
-                    async for chunk in response.aiter_text(chunk_size=1024):
+                    MAX_BUFFER_SIZE = 65536  # 64KB buffer limit
+                    async for chunk in response.aiter_text(chunk_size=2048):
                         if not chunk:
                             continue
+
+                        # Prevent buffer overflow
+                        if len(buffer) + len(chunk) > MAX_BUFFER_SIZE:
+                            logger.warning("Stream buffer limit reached, clearing buffer")
+                            buffer = buffer[-16384:]  # Keep last 16KB
 
                         buffer += chunk
 
@@ -549,6 +579,7 @@ class ProxyHandler:
                         while "\n" in buffer:
                             line, buffer = buffer.split("\n", 1)
                             line = line.strip()
+                            buffer = buffer.lstrip()  # Reduce memory usage
 
                             if not line.startswith("data: "):
                                 continue
@@ -617,6 +648,7 @@ class ProxyHandler:
                                     yield f"data: {json.dumps(openai_chunk)}\n\n"
 
                             except json.JSONDecodeError:
+                                buffer = ""  # Clear buffer on JSON errors
                                 continue  # Skip non-JSON lines
 
         except httpx.RequestError as e:

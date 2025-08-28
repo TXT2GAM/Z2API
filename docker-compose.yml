@@ -1,6 +1,6 @@
 services:
   z2api:
-    image: ghcr.io/oldjs/z2api:docker
+    build: .
     container_name: z2api-server
     ports:
       - "3002:8000"

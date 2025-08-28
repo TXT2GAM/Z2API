@@ -32,6 +32,7 @@ cp .env.example .env
 
 # 编辑 .env （可部署后在前端修改）
 # nano .env
+# nano docker-compose.yml
 
 docker compose up -d
 ```

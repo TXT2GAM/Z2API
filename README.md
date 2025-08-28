@@ -4,7 +4,7 @@
 
 ## Docker部署
 ```bash
-git clone https://github.com/TEXT2GAM/Z2API.git
+git clone https://github.com/TXT2GAM/Z2API.git
 cd Z2API
 
 pip install -r requirements.txt

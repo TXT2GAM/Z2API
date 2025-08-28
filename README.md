@@ -47,7 +47,7 @@ git pull origin main
 # git fetch origin && git reset --hard origin/main
 
 docker compose down
-docker compose pull
+docker compose build --no-cache
 docker compose up -d
 ```
 

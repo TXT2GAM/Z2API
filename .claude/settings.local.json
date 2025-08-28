@@ -6,7 +6,8 @@
       "Bash(pip install -r requirements.txt)",
       "Bash(timeout 10s python main.py)",
       "Bash(python -m py_compile demo.py)",
-      "Bash(python -m py_compile admin_test.py)"
+      "Bash(python -m py_compile admin_test.py)",
+      "Bash(python -c \"\nfrom admin_api import router\nfrom cookie_manager import cookie_manager\nprint(''Backend API modules imported successfully'')\nprint(''Available endpoints:'')\nfor route in router.routes:\n    if hasattr(route, ''path''):\n        print(f''  {route.methods} {route.path}'')\n\")"
     ],
     "deny": [],
     "ask": []

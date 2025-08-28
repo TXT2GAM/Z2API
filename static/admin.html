@@ -32,6 +32,18 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 20px;
+        }
+
+        .header-title {
+            text-align: left;
+        }
+
         h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
@@ -42,11 +54,37 @@
             opacity: 0.9;
         }
 
+        .gear-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .gear-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(30deg);
+        }
+
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            display: block;
             margin-top: 2rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
         }
 
         .card {
@@ -54,6 +92,7 @@
             border-radius: 12px;
             padding: 2rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
         }
 
         .card h2 {
@@ -130,24 +169,36 @@
         }
 
         .cookie-status {
-            margin-top: 1rem;
-            padding: 1rem;
+            margin-top: 2rem;
+            padding: 1.5rem;
             border-radius: 6px;
             background: #f7fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            text-align: center;
         }
 
         .status-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
         }
 
         .status-label {
-            font-weight: 600;
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 0.25rem;
         }
 
         .status-value {
-            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: 700;
         }
 
         .failed {
@@ -156,6 +207,17 @@
 
         .success {
             color: #38a169;
+        }
+
+        .primary {
+            color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
         }
 
         .notification {
@@ -169,6 +231,7 @@
             z-index: 1000;
             transform: translateX(100%);
             transition: transform 0.3s;
+            max-width: 400px;
         }
 
         .notification.show {
@@ -198,16 +261,35 @@
         }
 
         @media (max-width: 768px) {
-            .main-content {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .header-title {
+                text-align: center;
+            }
+
+            .status-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .config-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .card {
                 padding: 1.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            button {
+                margin-right: 0;
+                width: 100%;
             }
         }
 
@@ -216,146 +298,262 @@
             pointer-events: none;
         }
 
-        .test-result {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 6px;
-            display: none;
+        /* Cookie表格样式 */
+        .cookie-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
         }
 
-        .test-result.success {
+        .cookie-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .cookie-table th,
+        .cookie-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .cookie-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .cookie-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .cookie-preview {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: #1a202c;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-valid {
             background: #c6f6d5;
             color: #22543d;
-            border: 1px solid #9ae6b4;
         }
 
-        .test-result.error {
+        .badge-invalid {
             background: #fed7d7;
             color: #742a2a;
-            border: 1px solid #fc8181;
+        }
+
+        .add-cookie-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .add-cookie-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .back-button {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            margin-top: 1rem;
+        }
+
+        .back-button:hover {
+            box-shadow: 0 4px 12px rgba(74, 85, 104, 0.4);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>Z2API 管理界面</h1>
-            <p class="subtitle">Cookie 池管理和环境变量配置</p>
+        <div class="header-content">
+            <div class="header-title">
+                <h1>Z2API 管理界面</h1>
+                <p class="subtitle" id="page-subtitle">Cookie 池管理</p>
+            </div>
+            <button class="gear-button" onclick="togglePage()" title="设置">⚙️</button>
         </div>
     </header>
 
     <div class="container">
         <div class="main-content">
-            <!-- Cookie 管理 -->
-            <div class="card">
-                <h2>🍪 Cookie 管理</h2>
-                
-                <div class="form-group">
-                    <label for="cookies">Z.AI Cookie (一行一个)</label>
-                    <textarea 
-                        id="cookies" 
-                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    ></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="test-cookie">测试 Cookie</label>
-                    <input type="text" id="test-cookie" placeholder="输入要测试的 Cookie">
-                    <button onclick="testCookie()" class="btn-warning">测试 Cookie</button>
-                    <div id="test-result" class="test-result"></div>
-                </div>
-
-                <div class="form-group">
-                    <button onclick="updateCookies()" class="btn-success">💾 保存 Cookie</button>
-                    <button onclick="clearCookies()" class="btn-danger">🗑️ 清空 Cookie</button>
-                    <button onclick="refreshCookieStatus()" class="btn-warning">🔄 刷新状态</button>
-                </div>
-
-                <div class="cookie-status" id="cookie-status">
-                    <div class="status-item">
-                        <span class="status-label">总 Cookie 数:</span>
-                        <span class="status-value" id="total-cookies">-</span>
+            <!-- Cookie管理页面 -->
+            <div id="cookie-page" class="page active">
+                <!-- 添加Cookie区域 -->
+                <div class="add-cookie-section">
+                    <h2>🍪 添加 Cookie</h2>
+                    <div class="form-group">
+                        <label for="new-cookies">Z.AI Cookie (一行一个)</label>
+                        <textarea 
+                            id="new-cookies" 
+                            class="add-cookie-textarea"
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        ></textarea>
                     </div>
-                    <div class="status-item">
-                        <span class="status-label">失败 Cookie 数:</span>
-                        <span class="status-value failed" id="failed-cookies">-</span>
+                    <div class="action-buttons">
+                        <button onclick="addCookies()" class="btn-success">📥 添加 Cookie</button>
+                        <button onclick="clearNewCookies()" class="btn-danger">🗑️ 清空输入</button>
                     </div>
-                    <div class="status-item">
-                        <span class="status-label">可用 Cookie 数:</span>
-                        <span class="status-value success" id="available-cookies">-</span>
+                </div>
+
+                <!-- Cookie状态统计 -->
+                <div class="card">
+                    <h2>📊 Cookie 状态统计</h2>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-label">总 Cookie 数</div>
+                            <div class="status-value primary" id="total-cookies">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">失败 Cookie 数</div>
+                            <div class="status-value failed" id="failed-cookies">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">可用 Cookie 数</div>
+                            <div class="status-value success" id="available-cookies">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button onclick="refreshCookieStatus()" class="btn-warning">🔄 批量刷新状态</button>
+                        <button onclick="removeInvalidCookies()" class="btn-danger">🗑️ 一键删除无效 Cookie</button>
+                        <button onclick="clearAllCookies()" class="btn-danger">🗑️ 清空所有 Cookie</button>
+                    </div>
+                </div>
+
+                <!-- Cookie表格 -->
+                <div class="cookie-table-container">
+                    <h2>📋 Cookie 列表</h2>
+                    <div class="table-wrapper">
+                        <table class="cookie-table" id="cookie-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">序号</th>
+                                    <th>Cookie 预览</th>
+                                    <th style="width: 120px;">状态</th>
+                                    <th style="width: 150px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cookie-table-body">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-state" class="empty-state" style="display: none;">
+                        <div class="empty-state-icon">🍪</div>
+                        <div class="empty-state-text">暂无 Cookie 数据</div>
+                        <button onclick="focusAddCookie()" class="btn-success">📥 添加第一个 Cookie</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 环境变量配置 -->
-            <div class="card">
-                <h2>⚙️ 环境变量配置</h2>
-                
-                <div class="config-grid">
-                    <div class="form-group">
-                        <label for="api-key">API Key</label>
-                        <input type="text" id="api-key" placeholder="sk-z2api-key-2024">
+            <!-- 配置管理页面 -->
+            <div id="config-page" class="page">
+                <div class="card">
+                    <h2>⚙️ 环境变量配置</h2>
+                    
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label for="api-key">API Key</label>
+                            <input type="text" id="api-key" placeholder="sk-z2api-key-2024">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="host">服务器地址</label>
+                            <input type="text" id="host" placeholder="0.0.0.0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="port">端口</label>
+                            <input type="number" id="port" placeholder="8000">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="log-level">日志级别</label>
+                            <select id="log-level">
+                                <option value="DEBUG">DEBUG</option>
+                                <option value="INFO">INFO</option>
+                                <option value="WARNING">WARNING</option>
+                                <option value="ERROR">ERROR</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="show-think">显示思考标签</label>
+                            <select id="show-think">
+                                <option value="true">是</option>
+                                <option value="false">否</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="default-stream">默认流式模式</label>
+                            <select id="default-stream">
+                                <option value="true">是</option>
+                                <option value="false">否</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max-requests">每分钟最大请求数</label>
+                            <input type="number" id="max-requests" placeholder="60">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="auto-refresh">自动刷新令牌</label>
+                            <select id="auto-refresh">
+                                <option value="true">是</option>
+                                <option value="false">否</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="refresh-interval">刷新检查间隔(秒)</label>
+                            <input type="number" id="refresh-interval" placeholder="3600">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="host">服务器地址</label>
-                        <input type="text" id="host" placeholder="0.0.0.0">
+                    <div class="action-buttons">
+                        <button onclick="updateConfig()" class="btn-success">💾 保存配置</button>
+                        <button onclick="loadConfig()" class="btn-warning">🔄 刷新配置</button>
+                        <button onclick="reloadConfig()" class="btn-warning">🔄 重载服务</button>
+                        <button onclick="togglePage()" class="back-button">⬅️ 返回 Cookie 管理</button>
                     </div>
-
-                    <div class="form-group">
-                        <label for="port">端口</label>
-                        <input type="number" id="port" placeholder="8000">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="log-level">日志级别</label>
-                        <select id="log-level">
-                            <option value="DEBUG">DEBUG</option>
-                            <option value="INFO">INFO</option>
-                            <option value="WARNING">WARNING</option>
-                            <option value="ERROR">ERROR</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="show-think">显示思考标签</label>
-                        <select id="show-think">
-                            <option value="true">是</option>
-                            <option value="false">否</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="default-stream">默认流式模式</label>
-                        <select id="default-stream">
-                            <option value="true">是</option>
-                            <option value="false">否</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="max-requests">每分钟最大请求数</label>
-                        <input type="number" id="max-requests" placeholder="60">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="auto-refresh">自动刷新令牌</label>
-                        <select id="auto-refresh">
-                            <option value="true">是</option>
-                            <option value="false">否</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label for="refresh-interval">刷新检查间隔(秒)</label>
-                        <input type="number" id="refresh-interval" placeholder="3600">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <button onclick="updateConfig()" class="btn-success">💾 保存配置</button>
-                    <button onclick="loadConfig()" class="btn-warning">🔄 刷新配置</button>
-                    <button onclick="reloadConfig()" class="btn-warning">🔄 重载服务</button>
                 </div>
             </div>
         </div>
@@ -365,12 +563,34 @@
 
     <script>
         const API_BASE = '/api';
-        
+        let currentPage = 'cookie';
+        let cookieData = [];
+
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
             loadCookies();
-            loadConfig();
         });
+
+        // 切换页面
+        function togglePage() {
+            const cookiePage = document.getElementById('cookie-page');
+            const configPage = document.getElementById('config-page');
+            const subtitle = document.getElementById('page-subtitle');
+            
+            if (currentPage === 'cookie') {
+                cookiePage.classList.remove('active');
+                configPage.classList.add('active');
+                subtitle.textContent = '环境变量配置';
+                currentPage = 'config';
+                loadConfig();
+            } else {
+                configPage.classList.remove('active');
+                cookiePage.classList.add('active');
+                subtitle.textContent = 'Cookie 池管理';
+                currentPage = 'cookie';
+                loadCookies();
+            }
+        }
 
         // 显示通知
         function showNotification(message, type = 'success') {
@@ -384,7 +604,7 @@
             }, 3000);
         }
 
-        // 加载 Cookie 状态
+        // 载入 Cookie 状态
         async function loadCookies() {
             try {
                 const response = await fetch(`${API_BASE}/cookies`);
@@ -394,11 +614,8 @@
                 document.getElementById('failed-cookies').textContent = data.failed_count;
                 document.getElementById('available-cookies').textContent = data.count - data.failed_count;
                 
-                // 显示 Cookie 列表
-                const cookiesTextarea = document.getElementById('cookies');
-                if (data.cookies.length > 0) {
-                    cookiesTextarea.value = data.cookies.join('\n');
-                }
+                cookieData = data.cookies || [];
+                displayCookieTable(data.cookies || [], data.failed_cookies || []);
                 
             } catch (error) {
                 console.error('加载 Cookie 失败:', error);
@@ -406,21 +623,65 @@
             }
         }
 
-        // 刷新 Cookie 状态
-        async function refreshCookieStatus() {
-            await loadCookies();
-            showNotification('Cookie 状态已刷新');
-        }
-
-        // 更新 Cookie
-        async function updateCookies() {
-            const cookiesText = document.getElementById('cookies').value;
-            const cookies = cookiesText.split('\n').filter(cookie => cookie.trim());
+        // 显示 Cookie 表格
+        function displayCookieTable(cookies, failedCookies) {
+            const tbody = document.getElementById('cookie-table-body');
+            const emptyState = document.getElementById('empty-state');
+            const table = document.getElementById('cookie-table');
             
             if (cookies.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            table.style.display = 'table';
+            
+            tbody.innerHTML = cookies.map((cookie, index) => {
+                const isFailed = failedCookies.includes(cookie);
+                const statusClass = isFailed ? 'badge-invalid' : 'badge-valid';
+                const statusText = isFailed ? '无效' : '可用';
+                const preview = cookie.length > 50 ? cookie.substring(0, 50) + '...' : cookie;
+                
+                return `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="cookie-preview" title="${cookie}">${preview}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button onclick="removeCookie(${index})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🗑️ 删除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 添加 Cookie（带去重）
+        async function addCookies() {
+            const cookiesText = document.getElementById('new-cookies').value;
+            const newCookies = cookiesText.split('\n').filter(cookie => cookie.trim());
+            
+            if (newCookies.length === 0) {
                 showNotification('请输入至少一个 Cookie', 'warning');
                 return;
             }
+
+            // 去重逻辑
+            const uniqueCookies = [...new Set(newCookies.map(cookie => cookie.trim()))];
+            const existingCookies = new Set(cookieData);
+            
+            // 过滤掉已经存在的Cookie
+            const cookiesToAdd = uniqueCookies.filter(cookie => !existingCookies.has(cookie));
+            
+            if (cookiesToAdd.length === 0) {
+                showNotification('所有 Cookie 已存在，无需重复添加', 'warning');
+                return;
+            }
+
+            // 合并现有Cookie和新Cookie
+            const finalCookies = [...cookieData, ...cookiesToAdd];
             
             try {
                 const response = await fetch(`${API_BASE}/cookies`, {
@@ -428,26 +689,127 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ cookies: cookies })
+                    body: JSON.stringify({ cookies: finalCookies })
                 });
                 
                 if (response.ok) {
                     const result = await response.json();
-                    showNotification(result.message);
+                    const addedCount = cookiesToAdd.length;
+                    const duplicateCount = uniqueCookies.length - addedCount;
+                    
+                    if (duplicateCount > 0) {
+                        showNotification(`成功添加 ${addedCount} 个新 Cookie，跳过 ${duplicateCount} 个重复 Cookie`, 'success');
+                    } else {
+                        showNotification(result.message);
+                    }
+                    
+                    clearNewCookies();
                     await loadCookies();
                 } else {
                     const error = await response.json();
                     showNotification(error.detail, 'error');
                 }
             } catch (error) {
-                console.error('更新 Cookie 失败:', error);
-                showNotification('更新 Cookie 失败', 'error');
+                console.error('添加 Cookie 失败:', error);
+                showNotification('添加 Cookie 失败', 'error');
             }
         }
 
-        // 清空 Cookie
-        async function clearCookies() {
-            if (!confirm('确定要清空所有 Cookie 吗？')) {
+        // 清空新Cookie输入框
+        function clearNewCookies() {
+            document.getElementById('new-cookies').value = '';
+        }
+
+        // 聚焦到添加Cookie区域
+        function focusAddCookie() {
+            document.getElementById('new-cookies').focus();
+        }
+
+        // 删除单个Cookie
+        async function removeCookie(index) {
+            const cookieToRemove = cookieData[index];
+            if (!confirm(`确定要删除第 ${index + 1} 个 Cookie 吗？`)) {
+                return;
+            }
+
+            const updatedCookies = cookieData.filter((_, i) => i !== index);
+            
+            try {
+                const response = await fetch(`${API_BASE}/cookies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookies: updatedCookies })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification('Cookie 删除成功');
+                    await loadCookies();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('删除 Cookie 失败:', error);
+                showNotification('删除 Cookie 失败', 'error');
+            }
+        }
+
+        // 刷新 Cookie 状态
+        async function refreshCookieStatus() {
+            try {
+                showNotification('正在刷新 Cookie 状态...', 'warning');
+                await loadCookies();
+                showNotification('Cookie 状态已刷新');
+            } catch (error) {
+                showNotification('刷新 Cookie 状态失败', 'error');
+            }
+        }
+
+        // 一键删除所有无效Cookie
+        async function removeInvalidCookies() {
+            try {
+                const response = await fetch(`${API_BASE}/cookies`);
+                const data = await response.json();
+                
+                if (data.failed_count === 0) {
+                    showNotification('没有无效的 Cookie 需要删除', 'warning');
+                    return;
+                }
+
+                if (!confirm(`确定要删除 ${data.failed_count} 个无效的 Cookie 吗？`)) {
+                    return;
+                }
+
+                const validCookies = data.cookies.filter(cookie => !data.failed_cookies.includes(cookie));
+                
+                const updateResponse = await fetch(`${API_BASE}/cookies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookies: validCookies })
+                });
+                
+                if (updateResponse.ok) {
+                    const result = await updateResponse.json();
+                    showNotification(`已删除 ${data.failed_count} 个无效 Cookie`);
+                    await loadCookies();
+                } else {
+                    const error = await updateResponse.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('删除无效 Cookie 失败:', error);
+                showNotification('删除无效 Cookie 失败', 'error');
+            }
+        }
+
+        // 清空所有Cookie
+        async function clearAllCookies() {
+            if (!confirm('确定要清空所有 Cookie 吗？此操作不可撤销！')) {
                 return;
             }
             
@@ -459,7 +821,6 @@
                 if (response.ok) {
                     const result = await response.json();
                     showNotification(result.message);
-                    document.getElementById('cookies').value = '';
                     await loadCookies();
                 } else {
                     const error = await response.json();
@@ -468,43 +829,6 @@
             } catch (error) {
                 console.error('清空 Cookie 失败:', error);
                 showNotification('清空 Cookie 失败', 'error');
-            }
-        }
-
-        // 测试 Cookie
-        async function testCookie() {
-            const cookie = document.getElementById('test-cookie').value.trim();
-            if (!cookie) {
-                showNotification('请输入要测试的 Cookie', 'warning');
-                return;
-            }
-            
-            const testResult = document.getElementById('test-result');
-            testResult.style.display = 'block';
-            testResult.innerHTML = '<div>🔄 正在测试...</div>';
-            
-            try {
-                const response = await fetch(`${API_BASE}/cookies/test`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ cookie: cookie })
-                });
-                
-                const result = await response.json();
-                
-                if (result.is_valid) {
-                    testResult.className = 'test-result success';
-                    testResult.innerHTML = `<div>✅ Cookie 有效</div><div>Cookie: ${result.cookie}</div>`;
-                } else {
-                    testResult.className = 'test-result error';
-                    testResult.innerHTML = `<div>❌ Cookie 无效</div><div>原因: ${result.message}</div><div>Cookie: ${result.cookie}</div>`;
-                }
-            } catch (error) {
-                console.error('测试 Cookie 失败:', error);
-                testResult.className = 'test-result error';
-                testResult.innerHTML = '<div>❌ 测试失败: 网络错误</div>';
             }
         }
 
@@ -586,7 +910,9 @@
                     const result = await response.json();
                     showNotification(result.message);
                     await loadConfig();
-                    await loadCookies();
+                    if (currentPage === 'cookie') {
+                        await loadCookies();
+                    }
                 } else {
                     const error = await response.json();
                     showNotification(error.detail, 'error');

@@ -44,7 +44,7 @@ class Settings:
 
         # Don't raise error immediately, let the application handle it
         if not self.COOKIES:
-            print("⚠️  Warning: No valid Z.AI cookies configured!")
+            print("Warning: No valid Z.AI cookies configured!")
             print("Please set Z_AI_COOKIES environment variable with comma-separated cookie values.")
             print("Example: Z_AI_COOKIES=cookie1,cookie2,cookie3")
             print("The server will start but API calls will fail until cookies are configured.")
@@ -59,5 +59,5 @@ class Settings:
 try:
     settings = Settings()
 except Exception as e:
-    print(f"❌ Configuration error: {e}")
+    print(f"Configuration error: {e}")
     settings = None

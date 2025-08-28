@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z2API 管理界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #4a5568;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        textarea, input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .cookie-status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            background: #f7fafc;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-label {
+            font-weight: 600;
+        }
+
+        .status-value {
+            color: #667eea;
+        }
+
+        .failed {
+            color: #e53e3e;
+        }
+
+        .success {
+            color: #38a169;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #38a169;
+        }
+
+        .notification.error {
+            background: #e53e3e;
+        }
+
+        .notification.warning {
+            background: #ed8936;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .test-result.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .test-result.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Z2API 管理界面</h1>
+            <p class="subtitle">Cookie 池管理和环境变量配置</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- Cookie 管理 -->
+            <div class="card">
+                <h2>🍪 Cookie 管理</h2>
+                
+                <div class="form-group">
+                    <label for="cookies">Z.AI Cookie (一行一个)</label>
+                    <textarea 
+                        id="cookies" 
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="test-cookie">测试 Cookie</label>
+                    <input type="text" id="test-cookie" placeholder="输入要测试的 Cookie">
+                    <button onclick="testCookie()" class="btn-warning">测试 Cookie</button>
+                    <div id="test-result" class="test-result"></div>
+                </div>
+
+                <div class="form-group">
+                    <button onclick="updateCookies()" class="btn-success">💾 保存 Cookie</button>
+                    <button onclick="clearCookies()" class="btn-danger">🗑️ 清空 Cookie</button>
+                    <button onclick="refreshCookieStatus()" class="btn-warning">🔄 刷新状态</button>
+                </div>
+
+                <div class="cookie-status" id="cookie-status">
+                    <div class="status-item">
+                        <span class="status-label">总 Cookie 数:</span>
+                        <span class="status-value" id="total-cookies">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">失败 Cookie 数:</span>
+                        <span class="status-value failed" id="failed-cookies">-</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">可用 Cookie 数:</span>
+                        <span class="status-value success" id="available-cookies">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 环境变量配置 -->
+            <div class="card">
+                <h2>⚙️ 环境变量配置</h2>
+                
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label for="api-key">API Key</label>
+                        <input type="text" id="api-key" placeholder="sk-z2api-key-2024">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="host">服务器地址</label>
+                        <input type="text" id="host" placeholder="0.0.0.0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="port">端口</label>
+                        <input type="number" id="port" placeholder="8000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="log-level">日志级别</label>
+                        <select id="log-level">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="show-think">显示思考标签</label>
+                        <select id="show-think">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="default-stream">默认流式模式</label>
+                        <select id="default-stream">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="max-requests">每分钟最大请求数</label>
+                        <input type="number" id="max-requests" placeholder="60">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="auto-refresh">自动刷新令牌</label>
+                        <select id="auto-refresh">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="refresh-interval">刷新检查间隔(秒)</label>
+                        <input type="number" id="refresh-interval" placeholder="3600">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button onclick="updateConfig()" class="btn-success">💾 保存配置</button>
+                    <button onclick="loadConfig()" class="btn-warning">🔄 刷新配置</button>
+                    <button onclick="reloadConfig()" class="btn-warning">🔄 重载服务</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCookies();
+            loadConfig();
+        });
+
+        // 显示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 加载 Cookie 状态
+        async function loadCookies() {
+            try {
+                const response = await fetch(`${API_BASE}/cookies`);
+                const data = await response.json();
+                
+                document.getElementById('total-cookies').textContent = data.count;
+                document.getElementById('failed-cookies').textContent = data.failed_count;
+                document.getElementById('available-cookies').textContent = data.count - data.failed_count;
+                
+                // 显示 Cookie 列表
+                const cookiesTextarea = document.getElementById('cookies');
+                if (data.cookies.length > 0) {
+                    cookiesTextarea.value = data.cookies.join('\n');
+                }
+                
+            } catch (error) {
+                console.error('加载 Cookie 失败:', error);
+                showNotification('加载 Cookie 失败', 'error');
+            }
+        }
+
+        // 刷新 Cookie 状态
+        async function refreshCookieStatus() {
+            await loadCookies();
+            showNotification('Cookie 状态已刷新');
+        }
+
+        // 更新 Cookie
+        async function updateCookies() {
+            const cookiesText = document.getElementById('cookies').value;
+            const cookies = cookiesText.split('\n').filter(cookie => cookie.trim());
+            
+            if (cookies.length === 0) {
+                showNotification('请输入至少一个 Cookie', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/cookies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookies: cookies })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message);
+                    await loadCookies();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('更新 Cookie 失败:', error);
+                showNotification('更新 Cookie 失败', 'error');
+            }
+        }
+
+        // 清空 Cookie
+        async function clearCookies() {
+            if (!confirm('确定要清空所有 Cookie 吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/cookies`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message);
+                    document.getElementById('cookies').value = '';
+                    await loadCookies();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('清空 Cookie 失败:', error);
+                showNotification('清空 Cookie 失败', 'error');
+            }
+        }
+
+        // 测试 Cookie
+        async function testCookie() {
+            const cookie = document.getElementById('test-cookie').value.trim();
+            if (!cookie) {
+                showNotification('请输入要测试的 Cookie', 'warning');
+                return;
+            }
+            
+            const testResult = document.getElementById('test-result');
+            testResult.style.display = 'block';
+            testResult.innerHTML = '<div>🔄 正在测试...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/cookies/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookie: cookie })
+                });
+                
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    testResult.className = 'test-result success';
+                    testResult.innerHTML = `<div>✅ Cookie 有效</div><div>Cookie: ${result.cookie}</div>`;
+                } else {
+                    testResult.className = 'test-result error';
+                    testResult.innerHTML = `<div>❌ Cookie 无效</div><div>原因: ${result.message}</div><div>Cookie: ${result.cookie}</div>`;
+                }
+            } catch (error) {
+                console.error('测试 Cookie 失败:', error);
+                testResult.className = 'test-result error';
+                testResult.innerHTML = '<div>❌ 测试失败: 网络错误</div>';
+            }
+        }
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const data = await response.json();
+                
+                document.getElementById('api-key').value = data.api_key || '';
+                document.getElementById('host').value = data.host || '';
+                document.getElementById('port').value = data.port || '';
+                document.getElementById('log-level').value = data.log_level || 'INFO';
+                document.getElementById('show-think').value = data.show_think_tags.toString();
+                document.getElementById('default-stream').value = data.default_stream.toString();
+                document.getElementById('max-requests').value = data.max_requests_per_minute || '';
+                document.getElementById('auto-refresh').value = data.auto_refresh_tokens.toString();
+                document.getElementById('refresh-interval').value = data.refresh_check_interval || '';
+                
+            } catch (error) {
+                console.error('加载配置失败:', error);
+                showNotification('加载配置失败', 'error');
+            }
+        }
+
+        // 更新配置
+        async function updateConfig() {
+            const config = {
+                api_key: document.getElementById('api-key').value || undefined,
+                host: document.getElementById('host').value || undefined,
+                port: document.getElementById('port').value ? parseInt(document.getElementById('port').value) : undefined,
+                log_level: document.getElementById('log-level').value || undefined,
+                show_think_tags: document.getElementById('show-think').value === 'true',
+                default_stream: document.getElementById('default-stream').value === 'true',
+                max_requests_per_minute: document.getElementById('max-requests').value ? parseInt(document.getElementById('max-requests').value) : undefined,
+                auto_refresh_tokens: document.getElementById('auto-refresh').value === 'true',
+                refresh_check_interval: document.getElementById('refresh-interval').value ? parseInt(document.getElementById('refresh-interval').value) : undefined
+            };
+            
+            // 过滤掉 undefined 的值
+            const filteredConfig = Object.fromEntries(
+                Object.entries(config).filter(([_, value]) => value !== undefined)
+            );
+            
+            try {
+                const response = await fetch(`${API_BASE}/config`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(filteredConfig)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message);
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('更新配置失败:', error);
+                showNotification('更新配置失败', 'error');
+            }
+        }
+
+        // 重新加载配置
+        async function reloadConfig() {
+            if (!confirm('确定要重新加载配置吗？这将重启部分服务。')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/config/reload`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message);
+                    await loadConfig();
+                    await loadCookies();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail, 'error');
+                }
+            } catch (error) {
+                console.error('重载配置失败:', error);
+                showNotification('重载配置失败', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

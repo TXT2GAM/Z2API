@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile main.py)",
+      "Bash(python -m py_compile admin_api.py)",
+      "Bash(pip install -r requirements.txt)",
+      "Bash(timeout 10s python main.py)",
+      "Bash(python -m py_compile demo.py)",
+      "Bash(python -m py_compile admin_test.py)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

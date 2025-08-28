@@ -12,6 +12,7 @@ from config import settings
 from models import ChatCompletionRequest, ModelsResponse, ModelInfo, ErrorResponse
 from proxy_handler import ProxyHandler
 from cookie_manager import cookie_manager
+from admin_api import router as admin_router
 
 # Configure logging
 logging.basicConfig(
@@ -55,6 +56,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include admin API routes
+app.include_router(admin_router, prefix="", tags=["admin"])
 
 async def verify_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify authentication with fixed API key"""

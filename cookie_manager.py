@@ -41,8 +41,8 @@ class CookieManager:
             if '----' in cookie:
                 parts = cookie.split('----')
                 if len(parts) == 3:
-                    # 格式: token----email----password
-                    token, email, password = parts
+                    # 格式: email----password----token
+                    email, password, token = parts
                     self.cookie_info[token] = {
                         'email': email,
                         'password': password,
@@ -293,7 +293,7 @@ class CookieManager:
                     # 保留原有的账号密码信息
                     if old_cookie in self.cookie_info:
                         old_info = self.cookie_info[old_cookie].copy()
-                        old_info['raw_cookie'] = f"{new_token}----{old_info['email']}----{old_info['password']}"
+                        old_info['raw_cookie'] = f"{old_info['email']}----{old_info['password']}----{new_token}"
                         self.cookie_info[new_token] = old_info
                         if old_cookie != new_token:
                             del self.cookie_info[old_cookie]

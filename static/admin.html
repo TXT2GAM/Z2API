@@ -650,18 +650,17 @@
                 <div class="add-cookie-section">
                     <h2>🍪 添加 Cookie</h2>
                     <div class="form-group">
-                        <label for="new-cookies">Z.AI Cookie (一行一个，支持三种格式)</label>
+                        <label for="new-cookies">Z.AI Cookie (一行一个)</label>
                         <textarea 
                             id="new-cookies" 
                             class="add-cookie-textarea"
-                            placeholder="格式1: 纯Cookie&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&#10;&#10;格式2: Cookie----邮箱----密码&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....----delqd38542@acips.cc----hpigz09831&#10;&#10;格式3: 邮箱----密码 (会自动获取Cookie)&#10;delqd38542@acips.cc----hpigz09831"
                         ></textarea>
                     </div>
                     <div class="form-group">
                         <small style="color: #718096; font-size: 0.9rem;">
                             💡 支持三种格式：<br>
                             1. 纯Cookie（原有格式）<br>
-                            2. Cookie----邮箱----密码（完整信息）<br>
+                            2. 邮箱----密码----Cookie（完整信息）<br>
                             3. 邮箱----密码（自动获取Cookie）
                         </small>
                     </div>
@@ -937,11 +936,12 @@
                     if (cookie.includes('----')) {
                         const parts = cookie.split('----');
                         if (parts.length === 3) {
-                            // 格式: token----email----password
+                            // 格式: email----password----token
                             cookieInfoData[cookie] = {
-                                email: parts[1],
+                                email: parts[0],
                                 password: '***', // 隐藏密码
-                                has_credentials: true
+                                has_credentials: true,
+                                token: parts[2]
                             };
                         } else if (parts.length === 2) {
                             // 格式: email----password
@@ -1187,11 +1187,12 @@
                     if (cookie.includes('----')) {
                         const parts = cookie.split('----');
                         if (parts.length === 3) {
-                            // 格式: token----email----password
+                            // 格式: email----password----token
                             cookieInfoData[cookie] = {
-                                email: parts[1],
+                                email: parts[0],
                                 password: '***', // 隐藏密码
-                                has_credentials: true
+                                has_credentials: true,
+                                token: parts[2]
                             };
                         } else if (parts.length === 2) {
                             // 格式: email----password
@@ -1258,6 +1259,7 @@
                         showNotification(result.message);
                     }
                     
+                    // 自动清空输入框
                     clearNewCookies();
                     await loadCookies();
                 } else {

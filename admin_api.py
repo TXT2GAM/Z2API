@@ -52,10 +52,8 @@ async def update_cookies(request: CookieUpdateRequest):
     # 更新 settings 实例
     settings.COOKIES = valid_cookies
     
-    # 更新 cookie_manager
-    cookie_manager.cookies = valid_cookies
-    cookie_manager.failed_cookies.clear()
-    cookie_manager.current_index = 0
+    # 使用新的update_cookies方法更新cookie_manager
+    cookie_manager.update_cookies(valid_cookies)
     
     # 更新环境文件（如果存在）
     env_file = os.path.join(os.getcwd(), '.env')
@@ -77,10 +75,8 @@ async def clear_cookies():
     # 更新 settings 实例
     settings.COOKIES = []
     
-    # 更新 cookie_manager
-    cookie_manager.cookies = []
-    cookie_manager.failed_cookies.clear()
-    cookie_manager.current_index = 0
+    # 使用update_cookies方法重置cookie_manager
+    cookie_manager.update_cookies([])
     
     # 更新环境文件（如果存在）
     env_file = os.path.join(os.getcwd(), '.env')
@@ -113,6 +109,28 @@ async def test_cookie(request: Dict[str, str]):
             "is_valid": False,
             "message": f"测试失败: {str(e)}"
         }
+
+@router.post("/api/cookies/refresh")
+async def refresh_cookies():
+    """批量刷新 cookies 令牌"""
+    try:
+        result = await cookie_manager.batch_refresh_tokens()
+        
+        # 刷新成功后更新settings
+        if result["success"] and result["refreshed_count"] > 0:
+            settings.COOKIES = cookie_manager.cookies
+            
+            # 更新环境文件（如果存在）
+            env_file = os.path.join(os.getcwd(), '.env')
+            if os.path.exists(env_file):
+                try:
+                    set_key(env_file, 'Z_AI_COOKIES', ','.join(settings.COOKIES))
+                except Exception as e:
+                    print(f"Warning: Could not update .env file: {e}")
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"刷新 Cookies 失败: {str(e)}")
 
 @router.get("/api/config")
 async def get_config():
@@ -170,10 +188,8 @@ async def update_config(request: ConfigUpdateRequest):
 async def reload_config():
     """重新加载配置"""
     try:
-        # 更新 cookie_manager
-        cookie_manager.cookies = settings.COOKIES
-        cookie_manager.failed_cookies.clear()
-        cookie_manager.current_index = 0
+        # 使用update_cookies方法重新加载cookie_manager
+        cookie_manager.update_cookies(settings.COOKIES)
         
         return {"message": "配置已重新加载"}
     except Exception as e:

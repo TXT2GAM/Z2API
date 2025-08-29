@@ -24,11 +24,50 @@ logger = logging.getLogger(__name__)
 # Security
 security = HTTPBearer(auto_error=False)
 
+async def auto_refresh_periodic():
+    """Periodic auto-refresh task for tokens"""
+    while True:
+        try:
+            if settings.AUTO_REFRESH_TOKENS:
+                logger.info("Starting periodic auto-refresh of tokens")
+                result = await cookie_manager.batch_refresh_tokens()
+                if result["refreshed_count"] > 0:
+                    # Update settings with refreshed cookies
+                    settings.COOKIES = cookie_manager.cookies
+                    
+                    # Update environment file if it exists
+                    import os
+                    from dotenv import set_key
+                    env_file = os.path.join(os.getcwd(), '.env')
+                    if os.path.exists(env_file):
+                        try:
+                            set_key(env_file, 'Z_AI_COOKIES', ','.join(settings.COOKIES))
+                            logger.info("Updated environment file with refreshed cookies")
+                        except Exception as e:
+                            logger.warning(f"Could not update .env file: {e}")
+                    
+                    logger.info(f"Auto-refresh completed: {result['refreshed_count']} tokens refreshed")
+                else:
+                    logger.info(f"Auto-refresh completed: no tokens needed refreshing")
+            
+            # Wait for the configured interval
+            await asyncio.sleep(settings.REFRESH_CHECK_INTERVAL)
+        except Exception as e:
+            logger.error(f"Error in auto-refresh task: {e}")
+            # Wait 5 minutes before retrying on error
+            await asyncio.sleep(300)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Start background tasks
     health_check_task = asyncio.create_task(cookie_manager.periodic_health_check())
+    
+    # Start auto-refresh task if enabled
+    auto_refresh_task = None
+    if settings.AUTO_REFRESH_TOKENS:
+        logger.info("Auto-refresh tokens enabled, starting background task")
+        auto_refresh_task = asyncio.create_task(auto_refresh_periodic())
     
     try:
         yield
@@ -39,6 +78,13 @@ async def lifespan(app: FastAPI):
             await health_check_task
         except asyncio.CancelledError:
             pass
+        
+        if auto_refresh_task:
+            auto_refresh_task.cancel()
+            try:
+                await auto_refresh_task
+            except asyncio.CancelledError:
+                pass
 
 # Create FastAPI app
 app = FastAPI(

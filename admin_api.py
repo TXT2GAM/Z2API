@@ -27,6 +27,8 @@ class ConfigUpdateRequest(BaseModel):
     host: Optional[str] = None
     auto_refresh_tokens: Optional[bool] = None
     refresh_check_interval: Optional[int] = None
+    response_timeout: Optional[int] = None
+    connect_timeout: Optional[int] = None
 
 @router.get("/api/cookies")
 async def get_cookies():
@@ -125,6 +127,8 @@ async def get_config():
         "host": settings.HOST,
         "auto_refresh_tokens": settings.AUTO_REFRESH_TOKENS,
         "refresh_check_interval": settings.REFRESH_CHECK_INTERVAL,
+        "response_timeout": settings.RESPONSE_TIMEOUT,
+        "connect_timeout": settings.CONNECT_TIMEOUT,
         "model_name": settings.MODEL_NAME,
         "upstream_model": settings.UPSTREAM_MODEL
     }

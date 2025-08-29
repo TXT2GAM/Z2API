@@ -569,6 +569,7 @@
                     </div>
                     
                     <div class="action-buttons">
+                        <button onclick="exportAllCookies()" class="btn-success">📥 导出所有Cookie</button>
                         <button onclick="refreshCookieStatus()" class="btn-warning">🔄 批量刷新状态</button>
                         <button onclick="removeInvalidCookies()" class="btn-danger">🗑️ 一键删除无效 Cookie</button>
                         <button onclick="clearAllCookies()" class="btn-danger">🗑️ 清空所有 Cookie</button>
@@ -696,6 +697,16 @@
                         <div class="form-group full-width">
                             <label for="refresh-interval">刷新检查间隔(秒)</label>
                             <input type="number" id="refresh-interval" placeholder="3600">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="response-timeout">响应头超时（秒）</label>
+                            <input type="number" id="response-timeout" placeholder="300">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="connect-timeout">连接超时（秒）</label>
+                            <input type="number" id="connect-timeout" placeholder="30">
                         </div>
                     </div>
 
@@ -1148,6 +1159,53 @@
             }
         }
 
+        // 导出所有Cookie
+        async function exportAllCookies() {
+            try {
+                const response = await fetch(`${API_BASE}/cookies`);
+                const data = await response.json();
+                
+                if (!data.cookies || data.cookies.length === 0) {
+                    showNotification('没有可导的 Cookie', 'warning');
+                    return;
+                }
+                
+                // 创建txt文件内容
+                let fileContent = `Z2API Cookie 导出\n`;
+                fileContent += `导出时间: ${new Date().toLocaleString('zh-CN')}\n`;
+                fileContent += `总数量: ${data.count}\n`;
+                fileContent += `失败数量: ${data.failed_count}\n`;
+                fileContent += `可用数量: ${data.count - data.failed_count}\n`;
+                fileContent += `\n`;
+                fileContent += `=== 所有 Cookie ===\n`;
+                fileContent += `\n`;
+                
+                // 添加每个cookie，标记状态
+                data.cookies.forEach((cookie, index) => {
+                    const isFailed = data.failed_cookies && data.failed_cookies.includes(cookie);
+                    const status = isFailed ? '[失败]' : '[可用]';
+                    fileContent += `${index + 1}. ${status} ${cookie}\n`;
+                    fileContent += `\n`;
+                });
+                
+                // 创建下载链接
+                const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `z2api_cookies_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification(`已导出 ${data.count} 个 Cookie 到txt文件`);
+            } catch (error) {
+                console.error('导出 Cookie 失败:', error);
+                showNotification('导出 Cookie 失败', 'error');
+            }
+        }
+
         // 清空所有Cookie
         async function clearAllCookies() {
             if (!confirm('确定要清空所有 Cookie 吗？此操作不可撤销！')) {
@@ -1192,6 +1250,8 @@
                 document.getElementById('max-requests').value = data.max_requests_per_minute || '';
                 document.getElementById('auto-refresh').value = data.auto_refresh_tokens.toString();
                 document.getElementById('refresh-interval').value = data.refresh_check_interval || '';
+                document.getElementById('response-timeout').value = data.response_timeout || '';
+                document.getElementById('connect-timeout').value = data.connect_timeout || '';
                 
             } catch (error) {
                 console.error('加载配置失败:', error);
@@ -1210,7 +1270,9 @@
                 default_stream: document.getElementById('default-stream').value === 'true',
                 max_requests_per_minute: document.getElementById('max-requests').value ? parseInt(document.getElementById('max-requests').value) : undefined,
                 auto_refresh_tokens: document.getElementById('auto-refresh').value === 'true',
-                refresh_check_interval: document.getElementById('refresh-interval').value ? parseInt(document.getElementById('refresh-interval').value) : undefined
+                refresh_check_interval: document.getElementById('refresh-interval').value ? parseInt(document.getElementById('refresh-interval').value) : undefined,
+                response_timeout: document.getElementById('response-timeout').value ? parseInt(document.getElementById('response-timeout').value) : undefined,
+                connect_timeout: document.getElementById('connect-timeout').value ? parseInt(document.getElementById('connect-timeout').value) : undefined
             };
             
             // 过滤掉 undefined 的值

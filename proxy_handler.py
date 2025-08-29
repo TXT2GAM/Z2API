@@ -24,9 +24,14 @@ logger = logging.getLogger(__name__)
 
 class ProxyHandler:
     def __init__(self):
-        # Configure httpx client with optimized resource limits
+        # Configure httpx client with configurable timeout settings
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(30.0, read=60.0, connect=10.0, write=30.0),
+            timeout=httpx.Timeout(
+                settings.CONNECT_TIMEOUT, 
+                read=settings.RESPONSE_TIMEOUT, 
+                connect=settings.CONNECT_TIMEOUT, 
+                write=30.0
+            ),
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=10, keepalive_expiry=30),
             http2=False,  # Disable HTTP/2 to reduce connection overhead
             verify=False   # Skip SSL verification to reduce overhead
@@ -180,7 +185,7 @@ class ProxyHandler:
                 settings.UPSTREAM_URL,
                 json=request_data,
                 headers=headers,
-                timeout=httpx.Timeout(60.0, read=300.0)
+                timeout=httpx.Timeout(settings.CONNECT_TIMEOUT, read=settings.RESPONSE_TIMEOUT)
             ) as response:
 
                 if response.status_code == 401:
@@ -540,7 +545,7 @@ class ProxyHandler:
         try:
             # Create a new client for this streaming request to avoid conflicts
             async with httpx.AsyncClient(
-                timeout=httpx.Timeout(60.0, read=300.0),
+                timeout=httpx.Timeout(settings.CONNECT_TIMEOUT, read=settings.RESPONSE_TIMEOUT),
                 limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
                 http2=True
             ) as stream_client:

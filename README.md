@@ -15,9 +15,6 @@ cp .env.example .env
 docker build -t z2api .
 
 docker run -d -p 8000:8000 --env-file .env z2api
-
-# or 部署到3000端口
-# docker run -d -p 3000:8000 --env-file .env z2api
 ```
 
 ---
@@ -30,7 +27,8 @@ cd Z2API
 
 cp .env.example .env
 
-# 编辑 .env （可部署后在前端修改）
+# 编辑 .env 和 .yml（可部署后在前端修改）
+# 默认映射到 3002 端口
 # nano .env
 # nano docker-compose.yml
 

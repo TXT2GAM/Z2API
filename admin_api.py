@@ -185,9 +185,9 @@ async def update_config(request: ConfigUpdateRequest):
         # 将驼峰命名转换为环境变量的大写下划线命名
         env_key = key.upper()
         
-        # 设置内存中的值
-        if hasattr(settings, env_key):
-            setattr(settings, env_key, value)
+        # 设置内存中的值 - 直接设置，不需要hasattr检查
+        # 因为这些属性都在__init__中动态创建
+        setattr(settings, env_key, value)
         
         # 更新环境文件
         if os.path.exists(env_file):

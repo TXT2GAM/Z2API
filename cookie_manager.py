@@ -342,7 +342,7 @@ class CookieManager:
                         full_format_cookie = f"{email}----{real_password}----{new_token}"
                         
                         # 更新cookie列表为完整格式
-                        if old_cookie in new_cookies_list:
+                        if old_cookie in old_cookies_list:
                             index = new_cookies_list.index(old_cookie)
                             new_cookies_list[index] = full_format_cookie
                         else:
@@ -367,7 +367,7 @@ class CookieManager:
                         updated_cookies.append(full_format_cookie)
                     else:
                         # 如果找不到邮箱信息，直接存储token
-                        if old_cookie in new_cookies_list:
+                        if old_cookie in old_cookies_list:
                             index = new_cookies_list.index(old_cookie)
                             new_cookies_list[index] = new_token
                         

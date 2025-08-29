@@ -241,7 +241,12 @@ class CookieManager:
         cookies_to_refresh = []
         for cookie, info in self.cookie_info.items():
             if info.get('has_credentials') and info.get('email') and info.get('password'):
-                cookies_to_refresh.append((cookie, info['email'], info['password']))
+                # 如果cookie格式是email----password----token，需要使用实际的token
+                if info.get('raw_cookie') and info.get('raw_cookie') != cookie:
+                    # 这种情况下，cookie是实际的token，raw_cookie是完整的格式
+                    cookies_to_refresh.append((info['raw_cookie'], info['email'], info['password']))
+                else:
+                    cookies_to_refresh.append((cookie, info['email'], info['password']))
         
         if not cookies_to_refresh:
             return {
@@ -285,11 +290,23 @@ class CookieManager:
             old_cookie, new_token = result
             if new_token:
                 # 刷新成功，更新cookie列表
+                # 需要找到old_cookie在cookie列表中的位置
+                cookie_found = False
+                
+                # 检查old_cookie是否直接在cookie列表中
                 if old_cookie in old_cookies_list:
-                    # 找到并替换旧的cookie
                     index = old_cookies_list.index(old_cookie)
                     old_cookies_list[index] = new_token
-                    
+                    cookie_found = True
+                else:
+                    # 如果不是，可能是email----password----token格式，需要找到对应的token
+                    for i, cookie in enumerate(old_cookies_list):
+                        if cookie == old_cookie or (self.cookie_info.get(cookie) and self.cookie_info[cookie].get('raw_cookie') == old_cookie):
+                            old_cookies_list[i] = new_token
+                            cookie_found = True
+                            break
+                
+                if cookie_found:
                     # 保留原有的账号密码信息
                     if old_cookie in self.cookie_info:
                         old_info = self.cookie_info[old_cookie].copy()
@@ -297,6 +314,16 @@ class CookieManager:
                         self.cookie_info[new_token] = old_info
                         if old_cookie != new_token:
                             del self.cookie_info[old_cookie]
+                    elif any(info.get('raw_cookie') == old_cookie for info in self.cookie_info.values()):
+                        # 查找包含这个raw_cookie的entry
+                        for cookie_key, info in self.cookie_info.items():
+                            if info.get('raw_cookie') == old_cookie:
+                                old_info = info.copy()
+                                old_info['raw_cookie'] = f"{old_info['email']}----{old_info['password']}----{new_token}"
+                                self.cookie_info[new_token] = old_info
+                                if cookie_key != new_token:
+                                    del self.cookie_info[cookie_key]
+                                break
                     
                     updated_cookies.append(new_token)
                     refreshed_count += 1
@@ -306,7 +333,14 @@ class CookieManager:
                     failed_count += 1
             else:
                 # 刷新失败，保持原样
-                logger.error(f"Failed to refresh token for {self.cookie_info.get(old_cookie, {}).get('email', 'unknown')}")
+                email_info = self.cookie_info.get(old_cookie, {}).get('email', 'unknown')
+                if email_info == 'unknown':
+                    # 尝试从raw_cookie中查找
+                    for info in self.cookie_info.values():
+                        if info.get('raw_cookie') == old_cookie:
+                            email_info = info.get('email', 'unknown')
+                            break
+                logger.error(f"Failed to refresh token for {email_info}")
                 failed_count += 1
         
         # 更新cookies列表

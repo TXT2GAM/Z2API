@@ -261,9 +261,9 @@ class ProxyHandler:
                             or "Unknown error from upstream"
                         )
                         logger.error(f"Upstream error: {error_detail}")
-                        raise HTTPException(
-                            status_code=400, detail=f"Upstream error: {error_detail}"
-                        )
+                        # Instead of raising HTTPException, log and stop processing
+                        # The error will be handled at the streaming level
+                        return
 
                     # Clean up response data to reduce memory
                     if parsed.get("data"):
@@ -558,11 +558,31 @@ class ProxyHandler:
 
                     if response.status_code == 401:
                         await cookie_manager.mark_cookie_failed(cookie)
-                        raise HTTPException(status_code=401, detail="Invalid authentication")
+                        # Instead of raising HTTPException, yield an error message and return
+                        error_data = {
+                            "error": {
+                                "message": "Invalid authentication",
+                                "type": "authentication_error",
+                                "code": 401
+                            }
+                        }
+                        yield f"data: {json.dumps(error_data)}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
 
                     if response.status_code != 200:
                         await cookie_manager.mark_cookie_failed(cookie)
-                        raise HTTPException(status_code=response.status_code, detail="Upstream error")
+                        # Instead of raising HTTPException, yield an error message and return
+                        error_data = {
+                            "error": {
+                                "message": f"Upstream error: HTTP {response.status_code}",
+                                "type": "upstream_error",
+                                "code": response.status_code
+                            }
+                        }
+                        yield f"data: {json.dumps(error_data)}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
 
                     await cookie_manager.mark_cookie_success(cookie)
 

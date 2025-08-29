@@ -60,8 +60,22 @@ class CookieManager:
                         'raw_cookie': cookie
                     }
     
+    def _extract_token(self, cookie: str) -> Optional[str]:
+        """Extract the actual token from cookie string"""
+        if not cookie:
+            return None
+            
+        # If it's a full format cookie (email----password----token)
+        if '----' in cookie:
+            parts = cookie.split('----')
+            if len(parts) >= 3:
+                return parts[-1]  # Return the last part (actual token)
+        
+        # If it's already a pure token, return as is
+        return cookie
+    
     async def get_next_cookie(self) -> Optional[str]:
-        """Get the next available cookie using round-robin"""
+        """Get the next available cookie token using round-robin"""
         if not self.cookies:
             return None
 
@@ -73,7 +87,10 @@ class CookieManager:
 
                 # Skip failed cookies
                 if cookie not in self.failed_cookies:
-                    return cookie
+                    # Extract the actual token (last part after ----)
+                    actual_token = self._extract_token(cookie)
+                    if actual_token:
+                        return actual_token
 
                 attempts += 1
 
@@ -81,22 +98,37 @@ class CookieManager:
             if self.failed_cookies:
                 logger.warning(f"All {len(self.cookies)} cookies failed, resetting failed set and retrying")
                 self.failed_cookies.clear()
-                return self.cookies[0]
+                first_cookie = self.cookies[0]
+                return self._extract_token(first_cookie)
 
             return None
     
-    async def mark_cookie_failed(self, cookie: str):
-        """Mark a cookie as failed"""
+    async def mark_cookie_failed(self, token: str):
+        """Mark a cookie token as failed"""
         async with self.lock:
-            self.failed_cookies.add(cookie)
-            logger.warning(f"Marked cookie as failed: {cookie[:20]}...")
+            # Find the full cookie that contains this token
+            full_cookie = self._find_full_cookie_by_token(token)
+            if full_cookie:
+                self.failed_cookies.add(full_cookie)
+                logger.warning(f"Marked cookie as failed: {full_cookie[:20]}...")
+            else:
+                logger.warning(f"Could not find full cookie for token: {token[:20]}...")
     
-    async def mark_cookie_success(self, cookie: str):
-        """Mark a cookie as working (remove from failed set)"""
+    async def mark_cookie_success(self, token: str):
+        """Mark a cookie token as working (remove from failed set)"""
         async with self.lock:
-            if cookie in self.failed_cookies:
-                self.failed_cookies.discard(cookie)
-                logger.info(f"Cookie recovered: {cookie[:20]}...")
+            # Find the full cookie that contains this token
+            full_cookie = self._find_full_cookie_by_token(token)
+            if full_cookie and full_cookie in self.failed_cookies:
+                self.failed_cookies.discard(full_cookie)
+                logger.info(f"Cookie recovered: {full_cookie[:20]}...")
+    
+    def _find_full_cookie_by_token(self, token: str) -> Optional[str]:
+        """Find the full cookie string that contains the given token"""
+        for full_cookie in self.cookies:
+            if full_cookie == token or self._extract_token(full_cookie) == token:
+                return full_cookie
+        return None
     
     async def health_check(self, cookie: str) -> bool:
         """Check if a cookie is still valid"""
@@ -180,8 +212,9 @@ class CookieManager:
                     logger.info(f"Running health check for {len(self.failed_cookies)} failed cookies")
 
                     for cookie in list(self.failed_cookies):  # Create a copy to avoid modification during iteration
-                        if await self.health_check(cookie):
-                            await self.mark_cookie_success(cookie)
+                        token = self._extract_token(cookie)
+                        if token and await self.health_check(token):
+                            await self.mark_cookie_success(token)
                             logger.info(f"Cookie recovered: {cookie[:20]}...")
                         else:
                             logger.debug(f"Cookie still failed: {cookie[:20]}...")

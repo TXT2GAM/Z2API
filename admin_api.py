@@ -3,6 +3,7 @@ Management API endpoints for Z.AI Proxy
 """
 import os
 import json
+import logging
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
@@ -11,6 +12,8 @@ from dotenv import set_key, get_key, unset_key
 
 from config import settings
 from cookie_manager import cookie_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -33,9 +36,26 @@ class ConfigUpdateRequest(BaseModel):
 @router.get("/api/cookies")
 async def get_cookies():
     """获取当前 Cookie 列表"""
+    # 确保返回的cookies格式一致，都包含账号密码信息
+    processed_cookies = []
+    for cookie in settings.COOKIES:
+        # 如果cookie不是完整格式，转换为完整格式
+        if '----' not in cookie:
+            # 纯token格式，转换为完整格式
+            cookie_info = cookie_manager.get_cookie_info(cookie)
+            if cookie_info.get('has_credentials') and cookie_info.get('email'):
+                # 如果cookie_info中有账号密码信息，使用完整格式
+                full_cookie = f"{cookie_info['email']}----{cookie_info['password']}----{cookie}"
+                processed_cookies.append(full_cookie)
+            else:
+                processed_cookies.append(cookie)
+        else:
+            # 已经是完整格式，直接使用
+            processed_cookies.append(cookie)
+    
     return {
-        "cookies": settings.COOKIES,
-        "count": len(settings.COOKIES),
+        "cookies": processed_cookies,
+        "count": len(processed_cookies),
         "failed_count": len(cookie_manager.failed_cookies),
         "failed_cookies": list(cookie_manager.failed_cookies)
     }
@@ -125,6 +145,7 @@ async def refresh_cookies():
             if os.path.exists(env_file):
                 try:
                     set_key(env_file, 'Z_AI_COOKIES', ','.join(settings.COOKIES))
+                    logger.info(f"Updated {len(settings.COOKIES)} cookies in .env file")
                 except Exception as e:
                     print(f"Warning: Could not update .env file: {e}")
         

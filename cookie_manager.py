@@ -303,14 +303,15 @@ class CookieManager:
                 # 检查old_cookie是否直接在cookie列表中
                 if old_cookie in old_cookies_list:
                     index = old_cookies_list.index(old_cookie)
-                    old_cookies_list[index] = new_token
+                    # 先不替换，等下面获取到账号密码信息后再处理
                     cookie_found = True
+                    cookie_index = index
                 else:
                     # 如果不是，可能是email----password----token格式，需要找到对应的token
                     for i, cookie in enumerate(old_cookies_list):
                         if cookie == old_cookie or (self.cookie_info.get(cookie) and self.cookie_info[cookie].get('raw_cookie') == old_cookie):
-                            old_cookies_list[i] = new_token
                             cookie_found = True
+                            cookie_index = i
                             break
                 
                 if cookie_found:
@@ -343,11 +344,11 @@ class CookieManager:
                         
                         # 更新cookie列表为完整格式
                         if old_cookie in old_cookies_list:
-                            index = new_cookies_list.index(old_cookie)
-                            new_cookies_list[index] = full_format_cookie
+                            index = old_cookies_list.index(old_cookie)
+                            old_cookies_list[index] = full_format_cookie
                         else:
                             # 如果不在列表中，添加进去
-                            new_cookies_list.append(full_format_cookie)
+                            old_cookies_list.append(full_format_cookie)
                         
                         # 创建新的cookie_info
                         new_info = {
@@ -368,8 +369,8 @@ class CookieManager:
                     else:
                         # 如果找不到邮箱信息，直接存储token
                         if old_cookie in old_cookies_list:
-                            index = new_cookies_list.index(old_cookie)
-                            new_cookies_list[index] = new_token
+                            index = old_cookies_list.index(old_cookie)
+                            old_cookies_list[index] = new_token
                         
                         self.cookie_info[new_token] = {
                             'email': '',

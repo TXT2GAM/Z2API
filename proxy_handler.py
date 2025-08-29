@@ -442,10 +442,21 @@ class ProxyHandler:
 
         # Aggregate content based on SHOW_THINK_TAGS setting
         if settings.SHOW_THINK_TAGS:
-            # Include all content
-            full_content = "".join(
-                chunk.get("data", {}).get("delta_content", "") for chunk in chunks
-            )
+            # When SHOW_THINK_TAGS=true, prioritize edit_content for formatted thinking content
+            edit_contents = []
+            for chunk in chunks:
+                edit_content = chunk.get("data", {}).get("edit_content", "")
+                if edit_content:
+                    edit_contents.append(edit_content)
+            
+            if edit_contents:
+                # Use the last edit_content as it contains the complete formatted content
+                full_content = edit_contents[-1]
+            else:
+                # Fallback to delta_content if no edit_content found
+                full_content = "".join(
+                    chunk.get("data", {}).get("delta_content", "") for chunk in chunks
+                )
         else:
             # Only include answer phase content
             full_content = "".join(
@@ -631,6 +642,7 @@ class ProxyHandler:
                                 parsed = json.loads(payload)
                                 data = parsed.get("data", {})
                                 delta_content = data.get("delta_content", "")
+                                edit_content = data.get("edit_content", "")
                                 phase = data.get("phase", "")
 
                                 # Track phase changes
@@ -644,10 +656,17 @@ class ProxyHandler:
                                 if not settings.SHOW_THINK_TAGS and phase == "thinking":
                                     should_send_content = False
 
+                                # For streaming, prioritize edit_content when available and SHOW_THINK_TAGS=true
+                                content_to_send = delta_content
+                                if settings.SHOW_THINK_TAGS and edit_content:
+                                    # In streaming mode, we still use delta_content for real-time experience
+                                    # but we could enhance this to use edit_content when appropriate
+                                    content_to_send = delta_content
+
                                 # Process and send content immediately if we should
-                                if delta_content and should_send_content:
+                                if content_to_send and should_send_content:
                                     # Minimal transformation for real-time streaming
-                                    transformed_delta = delta_content
+                                    transformed_delta = content_to_send
 
                                     if settings.SHOW_THINK_TAGS:
                                         # Simple tag replacement for streaming

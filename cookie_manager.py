@@ -243,20 +243,17 @@ class CookieManager:
         for cookie, info in self.cookie_info.items():
             # 只处理有账号密码信息的cookie
             if info.get('has_credentials') and info.get('email') and info.get('password'):
-                # 尝试获取真实的密码
-                real_password = info.get('password')
+                # 获取密码（现在显示的是真实密码）
+                password = info.get('password')
                 
-                # 如果密码是***，尝试从raw_cookie中提取
-                if real_password == '***' and info.get('raw_cookie'):
-                    raw_parts = info['raw_cookie'].split('----')
-                    if len(raw_parts) >= 3:
-                        real_password = raw_parts[1]  # 从email----password----token中提取密码
+                # 如果cookie格式是email----password----token，需要使用真实的token
+                refresh_cookie = cookie
+                if info.get('raw_cookie') and info.get('raw_cookie') != cookie:
+                    refresh_cookie = info.get('raw_cookie')
                 
-                # 确保有密码可以用于刷新
-                if real_password:
-                    # 使用raw_cookie作为要刷新的cookie（如果是完整格式）
-                    refresh_cookie = info.get('raw_cookie') if info.get('raw_cookie') and info.get('raw_cookie') != cookie else cookie
-                    cookies_to_refresh.append((refresh_cookie, info['email'], real_password))
+                # 确保有密码
+                if password:
+                    cookies_to_refresh.append((refresh_cookie, info['email'], password))
         
         if not cookies_to_refresh:
             return {
@@ -289,8 +286,7 @@ class CookieManager:
         
         # 处理结果
         updated_cookies = []
-        # 创建新的cookie列表，存储完整格式的cookies
-        new_cookies_list = self.cookies.copy()
+        old_cookies_list = self.cookies.copy()
         
         for result in results:
             if isinstance(result, Exception):
@@ -401,7 +397,7 @@ class CookieManager:
         
         # 更新cookies列表
         async with self.lock:
-            self.cookies = new_cookies_list
+            self.cookies = old_cookies_list
         
         return {
             "success": True,

@@ -379,7 +379,8 @@ class CookieManager:
                         
                         updated_cookies.append(new_token)
                         refreshed_count += 1
-                    logger.info(f"Updated token for {self.cookie_info[new_token]['email']}")
+                    email_info = self.cookie_info.get(new_token, {}).get('email', 'unknown')
+                    logger.info(f"Updated token for {email_info}")
                 else:
                     logger.warning(f"Cookie not found in list: {old_cookie}")
                     failed_count += 1

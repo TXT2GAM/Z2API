@@ -808,11 +808,20 @@
                         const parts = cookie.split('----');
                         if (parts.length === 3) {
                             // 格式: email----password----token
-                            cookieInfoData[parts[2]] = {
+                            const token = parts[2];
+                            cookieInfoData[token] = {
                                 email: parts[0],
                                 password: '***', // 隐藏密码
                                 has_credentials: true,
-                                token: parts[2],
+                                token: token,
+                                raw_cookie: cookie
+                            };
+                            // 同时也映射原始字符串，确保查询能找到
+                            cookieInfoData[cookie] = {
+                                email: parts[0],
+                                password: '***', // 隐藏密码
+                                has_credentials: true,
+                                token: token,
                                 raw_cookie: cookie
                             };
                         } else if (parts.length === 2) {
@@ -1077,11 +1086,20 @@
                         const parts = cookie.split('----');
                         if (parts.length === 3) {
                             // 格式: email----password----token
-                            cookieInfoData[parts[2]] = {
+                            const token = parts[2];
+                            cookieInfoData[token] = {
                                 email: parts[0],
                                 password: '***', // 隐藏密码
                                 has_credentials: true,
-                                token: parts[2],
+                                token: token,
+                                raw_cookie: cookie
+                            };
+                            // 同时也映射原始字符串，确保查询能找到
+                            cookieInfoData[cookie] = {
+                                email: parts[0],
+                                password: '***', // 隐藏密码
+                                has_credentials: true,
+                                token: token,
                                 raw_cookie: cookie
                             };
                         } else if (parts.length === 2) {

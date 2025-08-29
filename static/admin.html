@@ -812,7 +812,7 @@
                             const token = parts[2];
                             cookieInfoData[token] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 token: token,
                                 raw_cookie: cookie
@@ -820,7 +820,7 @@
                             // 同时也映射原始字符串，确保查询能找到
                             cookieInfoData[cookie] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 token: token,
                                 raw_cookie: cookie
@@ -829,7 +829,7 @@
                             // 格式: email----password
                             cookieInfoData[cookie] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 needs_token: true,
                                 raw_cookie: cookie
@@ -1101,7 +1101,7 @@
                             const token = parts[2];
                             cookieInfoData[token] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 token: token,
                                 raw_cookie: cookie
@@ -1109,7 +1109,7 @@
                             // 同时也映射原始字符串，确保查询能找到
                             cookieInfoData[cookie] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 token: token,
                                 raw_cookie: cookie
@@ -1118,7 +1118,7 @@
                             // 格式: email----password
                             cookieInfoData[cookie] = {
                                 email: parts[0],
-                                password: '***', // 隐藏密码
+                                password: parts[1], // 显示真实密码
                                 has_credentials: true,
                                 needs_token: true,
                                 raw_cookie: cookie

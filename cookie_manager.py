@@ -239,20 +239,24 @@ class CookieManager:
         
         # 收集需要刷新的cookies
         cookies_to_refresh = []
+        
         for cookie, info in self.cookie_info.items():
             # 只处理有账号密码信息的cookie
             if info.get('has_credentials') and info.get('email') and info.get('password'):
-                # 确保有密码信息（不是***）
-                if info.get('password') and info.get('password') != '***':
-                    # 如果cookie格式是email----password----token，需要使用实际的token
-                    if info.get('raw_cookie') and info.get('raw_cookie') != cookie:
-                        # 这种情况下，cookie是实际的token，raw_cookie是完整的格式
-                        # 从raw_cookie中提取真实的密码
-                        raw_parts = info['raw_cookie'].split('----')
-                        real_password = raw_parts[1] if len(raw_parts) >= 3 else info['password']
-                        cookies_to_refresh.append((info['raw_cookie'], info['email'], real_password))
-                    else:
-                        cookies_to_refresh.append((cookie, info['email'], info['password']))
+                # 尝试获取真实的密码
+                real_password = info.get('password')
+                
+                # 如果密码是***，尝试从raw_cookie中提取
+                if real_password == '***' and info.get('raw_cookie'):
+                    raw_parts = info['raw_cookie'].split('----')
+                    if len(raw_parts) >= 3:
+                        real_password = raw_parts[1]  # 从email----password----token中提取密码
+                
+                # 确保有密码可以用于刷新
+                if real_password:
+                    # 使用raw_cookie作为要刷新的cookie（如果是完整格式）
+                    refresh_cookie = info.get('raw_cookie') if info.get('raw_cookie') and info.get('raw_cookie') != cookie else cookie
+                    cookies_to_refresh.append((refresh_cookie, info['email'], real_password))
         
         if not cookies_to_refresh:
             return {
@@ -352,7 +356,7 @@ class CookieManager:
                         # 创建新的cookie_info
                         new_info = {
                             'email': email,
-                            'password': '***',  # 隐藏密码
+                            'password': real_password,  # 显示真实密码
                             'has_credentials': True,
                             'raw_cookie': full_format_cookie,
                             'token': new_token

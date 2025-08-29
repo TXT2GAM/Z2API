@@ -240,13 +240,19 @@ class CookieManager:
         # 收集需要刷新的cookies
         cookies_to_refresh = []
         for cookie, info in self.cookie_info.items():
+            # 只处理有账号密码信息的cookie
             if info.get('has_credentials') and info.get('email') and info.get('password'):
-                # 如果cookie格式是email----password----token，需要使用实际的token
-                if info.get('raw_cookie') and info.get('raw_cookie') != cookie:
-                    # 这种情况下，cookie是实际的token，raw_cookie是完整的格式
-                    cookies_to_refresh.append((info['raw_cookie'], info['email'], info['password']))
-                else:
-                    cookies_to_refresh.append((cookie, info['email'], info['password']))
+                # 确保有密码信息（不是***）
+                if info.get('password') and info.get('password') != '***':
+                    # 如果cookie格式是email----password----token，需要使用实际的token
+                    if info.get('raw_cookie') and info.get('raw_cookie') != cookie:
+                        # 这种情况下，cookie是实际的token，raw_cookie是完整的格式
+                        # 从raw_cookie中提取真实的密码
+                        raw_parts = info['raw_cookie'].split('----')
+                        real_password = raw_parts[1] if len(raw_parts) >= 3 else info['password']
+                        cookies_to_refresh.append((info['raw_cookie'], info['email'], real_password))
+                    else:
+                        cookies_to_refresh.append((cookie, info['email'], info['password']))
         
         if not cookies_to_refresh:
             return {
@@ -279,7 +285,8 @@ class CookieManager:
         
         # 处理结果
         updated_cookies = []
-        old_cookies_list = self.cookies.copy()
+        # 创建新的cookie列表，存储完整格式的cookies
+        new_cookies_list = self.cookies.copy()
         
         for result in results:
             if isinstance(result, Exception):
@@ -307,26 +314,71 @@ class CookieManager:
                             break
                 
                 if cookie_found:
-                    # 保留原有的账号密码信息
+                    # 找到并替换旧的cookie，存储完整格式
+                    email = ''
+                    real_password = ''
+                    
                     if old_cookie in self.cookie_info:
                         old_info = self.cookie_info[old_cookie].copy()
-                        old_info['raw_cookie'] = f"{old_info['email']}----{old_info['password']}----{new_token}"
-                        self.cookie_info[new_token] = old_info
-                        if old_cookie != new_token:
-                            del self.cookie_info[old_cookie]
+                        email = old_info['email']
+                        # 从raw_cookie中提取真实的密码
+                        if old_info.get('raw_cookie'):
+                            raw_parts = old_info['raw_cookie'].split('----')
+                            real_password = raw_parts[1] if len(raw_parts) >= 3 else old_info['password']
+                        else:
+                            real_password = old_info['password']
                     elif any(info.get('raw_cookie') == old_cookie for info in self.cookie_info.values()):
                         # 查找包含这个raw_cookie的entry
                         for cookie_key, info in self.cookie_info.items():
                             if info.get('raw_cookie') == old_cookie:
-                                old_info = info.copy()
-                                old_info['raw_cookie'] = f"{old_info['email']}----{old_info['password']}----{new_token}"
-                                self.cookie_info[new_token] = old_info
-                                if cookie_key != new_token:
-                                    del self.cookie_info[cookie_key]
+                                email = info['email']
+                                # 从raw_cookie中提取真实的密码
+                                raw_parts = old_cookie.split('----')
+                                real_password = raw_parts[1] if len(raw_parts) >= 3 else info['password']
                                 break
                     
-                    updated_cookies.append(new_token)
-                    refreshed_count += 1
+                    if email:
+                        # 创建完整格式的新cookie
+                        full_format_cookie = f"{email}----{real_password}----{new_token}"
+                        
+                        # 更新cookie列表为完整格式
+                        if old_cookie in new_cookies_list:
+                            index = new_cookies_list.index(old_cookie)
+                            new_cookies_list[index] = full_format_cookie
+                        else:
+                            # 如果不在列表中，添加进去
+                            new_cookies_list.append(full_format_cookie)
+                        
+                        # 创建新的cookie_info
+                        new_info = {
+                            'email': email,
+                            'password': '***',  # 隐藏密码
+                            'has_credentials': True,
+                            'raw_cookie': full_format_cookie,
+                            'token': new_token
+                        }
+                        self.cookie_info[full_format_cookie] = new_info
+                        self.cookie_info[new_token] = new_info
+                        
+                        # 清理旧的entry
+                        if old_cookie in self.cookie_info and old_cookie != new_token:
+                            del self.cookie_info[old_cookie]
+                        
+                        updated_cookies.append(full_format_cookie)
+                    else:
+                        # 如果找不到邮箱信息，直接存储token
+                        if old_cookie in new_cookies_list:
+                            index = new_cookies_list.index(old_cookie)
+                            new_cookies_list[index] = new_token
+                        
+                        self.cookie_info[new_token] = {
+                            'email': '',
+                            'password': '',
+                            'has_credentials': False
+                        }
+                        
+                        updated_cookies.append(new_token)
+                        refreshed_count += 1
                     logger.info(f"Updated token for {self.cookie_info[new_token]['email']}")
                 else:
                     logger.warning(f"Cookie not found in list: {old_cookie}")
@@ -345,7 +397,7 @@ class CookieManager:
         
         # 更新cookies列表
         async with self.lock:
-            self.cookies = old_cookies_list
+            self.cookies = new_cookies_list
         
         return {
             "success": True,

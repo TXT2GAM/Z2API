@@ -617,6 +617,7 @@
                                 <tr>
                                     <th style="width: 80px; text-align: center;">序号</th>
                                     <th style="width: 200px; text-align: center;">账号</th>
+                                    <th style="width: 120px; text-align: center;">密码</th>
                                     <th style="text-align: center;">Cookie</th>
                                     <th style="width: 120px; text-align: center;">状态</th>
                                     <th style="width: 150px; text-align: center;">操作</th>
@@ -919,10 +920,21 @@
                     }
                 }
                 
+                // 密码信息显示
+                let passwordDisplay = '';
+                if (cookieInfo.has_credentials) {
+                    if (cookieInfo.password) {
+                        passwordDisplay = cookieInfo.password;
+                    } else {
+                        passwordDisplay = '-';
+                    }
+                }
+                
                 return `
                     <tr>
                         <td style="text-align: center;">${displayIndex + 1}</td>
                         <td style="text-align: center;">${accountDisplay}</td>
+                        <td style="text-align: center;">${passwordDisplay}</td>
                         <td class="cookie-preview" title="${cookieToShow}" style="text-align: center;">${preview}</td>
                         <td style="text-align: center;"><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td style="text-align: center;">

@@ -49,15 +49,18 @@ class Settings:
             print("Example: Z_AI_COOKIES=cookie1,cookie2,cookie3")
             print("The server will start but API calls will fail until cookies are configured.")
 
-    # Rate limiting
-    MAX_REQUESTS_PER_MINUTE: int = int(os.getenv("MAX_REQUESTS_PER_MINUTE", "60"))
-
+    
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     # Timeout settings for Z.AI requests
     RESPONSE_TIMEOUT: int = int(os.getenv("RESPONSE_TIMEOUT", "300"))  # 5 minutes default
     CONNECT_TIMEOUT: int = int(os.getenv("CONNECT_TIMEOUT", "30"))    # 30 seconds default
+    
+    # Connection pool settings
+    MAX_CONNECTIONS: int = int(os.getenv("MAX_CONNECTIONS", "50"))   # Maximum connections for all requests
+    MAX_KEEPALIVE_CONNECTIONS: int = int(os.getenv("MAX_KEEPALIVE_CONNECTIONS", "20"))  # Maximum keepalive connections
+    KEEPALIVE_EXPIRY: int = int(os.getenv("KEEPALIVE_EXPIRY", "30"))  # Keepalive connection expiry in seconds
 
 # Create settings instance
 try:

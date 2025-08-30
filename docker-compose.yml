@@ -11,12 +11,16 @@ services:
       - SHOW_THINK_TAGS=${SHOW_THINK_TAGS:-false} # 思考标签
       - DEFAULT_STREAM=${DEFAULT_STREAM:-false} # 流式
       - Z_AI_COOKIES=${Z_AI_COOKIES} # Z.AI的JWT令牌
-      - MAX_REQUESTS_PER_MINUTE=${MAX_REQUESTS_PER_MINUTE:-1000} # 每分钟最大请求数
       - LOG_LEVEL=${LOG_LEVEL:-ERROR} # 日志级别
 
       # 自动刷新设置 (当前未实现)
       - AUTO_REFRESH_TOKENS=${AUTO_REFRESH_TOKENS:-false} # 是否自动刷新令牌
       - REFRESH_CHECK_INTERVAL=${REFRESH_CHECK_INTERVAL:-3600} # 刷新检查间隔(秒)
+      
+      # 连接池设置
+      - MAX_CONNECTIONS=${MAX_CONNECTIONS:-50} # 最大连接数
+      - MAX_KEEPALIVE_CONNECTIONS=${MAX_KEEPALIVE_CONNECTIONS:-20} # 最大保持活动连接数
+      - KEEPALIVE_EXPIRY=${KEEPALIVE_EXPIRY:-30} # 连接保持时间(秒)
     volumes:
       # 可选：挂载日志目录
       - logs:/app/logs

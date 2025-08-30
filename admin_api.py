@@ -25,13 +25,15 @@ class ConfigUpdateRequest(BaseModel):
     show_think_tags: Optional[bool] = None
     default_stream: Optional[bool] = None
     log_level: Optional[str] = None
-    max_requests_per_minute: Optional[int] = None
     port: Optional[int] = None
     host: Optional[str] = None
     auto_refresh_tokens: Optional[bool] = None
     refresh_check_interval: Optional[int] = None
     response_timeout: Optional[int] = None
     connect_timeout: Optional[int] = None
+    max_connections: Optional[int] = None
+    max_keepalive_connections: Optional[int] = None
+    keepalive_expiry: Optional[int] = None
 
 @router.get("/api/cookies")
 async def get_cookies():
@@ -161,13 +163,15 @@ async def get_config():
         "show_think_tags": settings.SHOW_THINK_TAGS,
         "default_stream": settings.DEFAULT_STREAM,
         "log_level": settings.LOG_LEVEL,
-        "max_requests_per_minute": settings.MAX_REQUESTS_PER_MINUTE,
         "port": settings.PORT,
         "host": settings.HOST,
         "auto_refresh_tokens": settings.AUTO_REFRESH_TOKENS,
         "refresh_check_interval": settings.REFRESH_CHECK_INTERVAL,
         "response_timeout": settings.RESPONSE_TIMEOUT,
         "connect_timeout": settings.CONNECT_TIMEOUT,
+        "max_connections": settings.MAX_CONNECTIONS,
+        "max_keepalive_connections": settings.MAX_KEEPALIVE_CONNECTIONS,
+        "keepalive_expiry": settings.KEEPALIVE_EXPIRY,
         "model_name": settings.MODEL_NAME,
         "upstream_model": settings.UPSTREAM_MODEL
     }

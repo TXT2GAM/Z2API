@@ -136,7 +136,11 @@ class CookieManager:
             # Use a shared client configuration for health checks
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0, connect=5.0, read=5.0),
-                limits=httpx.Limits(max_connections=3, max_keepalive_connections=1, keepalive_expiry=15),
+                limits=httpx.Limits(
+                    max_connections=settings.MAX_CONNECTIONS, 
+                    max_keepalive_connections=settings.MAX_KEEPALIVE_CONNECTIONS, 
+                    keepalive_expiry=settings.KEEPALIVE_EXPIRY
+                ),
                 http2=False,
                 verify=False
             ) as client:

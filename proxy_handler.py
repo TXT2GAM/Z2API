@@ -32,7 +32,11 @@ class ProxyHandler:
                 connect=settings.CONNECT_TIMEOUT, 
                 write=30.0
             ),
-            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10, keepalive_expiry=30),
+            limits=httpx.Limits(
+                max_connections=settings.MAX_CONNECTIONS, 
+                max_keepalive_connections=settings.MAX_KEEPALIVE_CONNECTIONS, 
+                keepalive_expiry=settings.KEEPALIVE_EXPIRY
+            ),
             http2=False,  # Disable HTTP/2 to reduce connection overhead
             verify=False   # Skip SSL verification to reduce overhead
         )
@@ -557,7 +561,11 @@ class ProxyHandler:
             # Create a new client for this streaming request to avoid conflicts
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(settings.CONNECT_TIMEOUT, read=settings.RESPONSE_TIMEOUT),
-                limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+                limits=httpx.Limits(
+                    max_connections=settings.MAX_CONNECTIONS, 
+                    max_keepalive_connections=settings.MAX_KEEPALIVE_CONNECTIONS, 
+                    keepalive_expiry=settings.KEEPALIVE_EXPIRY
+                ),
                 http2=True
             ) as stream_client:
                 async with stream_client.stream(

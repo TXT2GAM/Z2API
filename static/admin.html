@@ -692,8 +692,18 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="max-requests">每分钟最大请求数</label>
-                            <input type="number" id="max-requests" placeholder="60">
+                            <label for="max-connections">最大连接数</label>
+                            <input type="number" id="max-connections" placeholder="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max-keepalive">保持活动连接数</label>
+                            <input type="number" id="max-keepalive" placeholder="20">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="keepalive-expiry">连接保持时间（秒）</label>
+                            <input type="number" id="keepalive-expiry" placeholder="30">
                         </div>
 
                         <div class="form-group">
@@ -1447,7 +1457,9 @@
                 document.getElementById('log-level').value = data.log_level || 'INFO';
                 document.getElementById('show-think').value = data.show_think_tags.toString();
                 document.getElementById('default-stream').value = data.default_stream.toString();
-                document.getElementById('max-requests').value = data.max_requests_per_minute || '';
+                document.getElementById('max-connections').value = data.max_connections || '';
+                document.getElementById('max-keepalive').value = data.max_keepalive_connections || '';
+                document.getElementById('keepalive-expiry').value = data.keepalive_expiry || '';
                 document.getElementById('auto-refresh').value = data.auto_refresh_tokens.toString();
                 document.getElementById('refresh-interval').value = data.refresh_check_interval || '';
                 document.getElementById('response-timeout').value = data.response_timeout || '';
@@ -1468,7 +1480,9 @@
                 log_level: document.getElementById('log-level').value || undefined,
                 show_think_tags: document.getElementById('show-think').value === 'true',
                 default_stream: document.getElementById('default-stream').value === 'true',
-                max_requests_per_minute: document.getElementById('max-requests').value ? parseInt(document.getElementById('max-requests').value) : undefined,
+                max_connections: document.getElementById('max-connections').value ? parseInt(document.getElementById('max-connections').value) : undefined,
+                max_keepalive_connections: document.getElementById('max-keepalive').value ? parseInt(document.getElementById('max-keepalive').value) : undefined,
+                keepalive_expiry: document.getElementById('keepalive-expiry').value ? parseInt(document.getElementById('keepalive-expiry').value) : undefined,
                 auto_refresh_tokens: document.getElementById('auto-refresh').value === 'true',
                 refresh_check_interval: document.getElementById('refresh-interval').value ? parseInt(document.getElementById('refresh-interval').value) : undefined,
                 response_timeout: document.getElementById('response-timeout').value ? parseInt(document.getElementById('response-timeout').value) : undefined,

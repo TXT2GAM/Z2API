@@ -122,10 +122,10 @@ async def list_models():
     """List available models"""
     models = [
         ModelInfo(
-            id=model_name,
+            id=settings.MODEL_ID,
             object="model",
             owned_by="z-ai"
-        ) for model_name in settings.MODEL_NAMES
+        )
     ]
     return ModelsResponse(data=models)
 
@@ -144,10 +144,10 @@ async def chat_completions(
             )
 
         # Validate model
-        if request.model not in settings.MODEL_NAMES:
+        if request.model != settings.MODEL_NAME:
             raise HTTPException(
                 status_code=400,
-                detail=f"Model '{request.model}' not supported. Use one of {settings.MODEL_NAMES}"
+                detail=f"Model '{request.model}' not supported. Use '{settings.MODEL_NAME}'"
             )
 
         async with ProxyHandler() as handler:
@@ -162,7 +162,7 @@ async def chat_completions(
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "models": settings.MODEL_NAMES}
+    return {"status": "healthy", "model": settings.MODEL_NAME}
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):

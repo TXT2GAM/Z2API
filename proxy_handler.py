@@ -54,13 +54,15 @@ class ProxyHandler:
         except Exception as e:
             logger.error(f"Error closing client: {e}")
 
-    def transform_content(self, content: str, show_think_tags: bool = True) -> str:
+    def transform_content(self, content: str) -> str:
         """Transform content by replacing HTML tags and optionally removing think tags"""
         if not content:
             return content
 
-        # If show_think_tags is False, remove thinking content
-        if not show_think_tags:
+        logger.debug(f"SHOW_THINK_TAGS setting: {settings.SHOW_THINK_TAGS}")
+
+        # Optionally remove thinking content based on configuration
+        if not settings.SHOW_THINK_TAGS:
             logger.debug("Removing thinking content from response")
             original_length = len(content)
 
@@ -129,16 +131,16 @@ class ProxyHandler:
             request.stream if request.stream is not None else settings.DEFAULT_STREAM
         )
 
-        
+        # Validate parameter compatibility
+        if is_streaming and not settings.SHOW_THINK_TAGS:
+            logger.warning("SHOW_THINK_TAGS=false is ignored for streaming responses")
+
         # Prepare request data
         request_data = request.model_dump(exclude_none=True)
         request_data["model"] = target_model
 
         # Build request data based on actual Z.AI format from zai-messages.md
         import uuid
-
-        # Determine if thinking should be enabled based on model type
-        enable_thinking = request.model != "GLM-4.5-fast"
 
         request_data = {
             "stream": True,  # Always request streaming from Z.AI for processing
@@ -151,7 +153,6 @@ class ProxyHandler:
                 "code_interpreter": False,
                 "web_search": False,
                 "auto_web_search": False,
-                "enable_thinking": enable_thinking,  # Enable thinking based on model type
             },
             "id": str(uuid.uuid4()),
             "mcp_servers": ["deep-web-search"],
@@ -298,12 +299,47 @@ class ProxyHandler:
                 },
             )
         else:
-            # For non-streaming responses, use the proxy request method and then process with non_stream_response
-            proxy_result = await self.proxy_request(request)
-            response = proxy_result["response"]
-            return await self.non_stream_response(response, request.model, request.model)
+            # For non-streaming responses, collect with memory limits
+            chunks = []
+            MAX_CONTENT_LENGTH = 1048576  # 1MB max content length
+            current_length = 0
+            
+            async for chunk_data in self.stream_proxy_response(request):
+                if chunk_data.startswith("data: ") and not chunk_data.startswith("data: [DONE]"):
+                    try:
+                        chunk_json = json.loads(chunk_data[6:])
+                        content = chunk_json.get("choices", [{}])[0].get("delta", {}).get("content")
+                        if content:
+                            # Check memory limits
+                            if current_length + len(content) > MAX_CONTENT_LENGTH:
+                                logger.warning("Content length limit reached, stopping collection")
+                                break
+                            chunks.append(content)
+                            current_length += len(content)
+                    except:
+                        continue
 
-    async def stream_response(self, response: httpx.Response, model: str, request_model: str = "GLM-4.5") -> AsyncGenerator[str, None]:
+            # Combine all content and clear chunks list
+            full_content = "".join(chunks)
+            chunks.clear()  # Explicitly clear to free memory
+
+            # Return as non-streaming response
+            import time
+            import uuid
+            return ChatCompletionResponse(
+                id=f"chatcmpl-{uuid.uuid4().hex[:29]}",
+                created=int(time.time()),
+                model=request.model,
+                choices=[
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": full_content},
+                        "finish_reason": "stop",
+                    }
+                ],
+            )
+
+    async def stream_response(self, response: httpx.Response, model: str) -> AsyncGenerator[str, None]:
         """Generate TRUE streaming response in OpenAI format - real-time processing"""
         import uuid
         import time
@@ -311,9 +347,6 @@ class ProxyHandler:
         # Generate a unique completion ID
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
         current_phase = None
-        
-        # Determine if thinking content should be shown based on model type
-        show_think_tags = request.model != "GLM-4.5-fast"
 
         try:
             # Real-time streaming: process each chunk immediately as it arrives
@@ -328,21 +361,20 @@ class ProxyHandler:
                         current_phase = phase
                         logger.debug(f"Phase changed to: {phase}")
 
-                    # Determine if thinking content should be shown based on model type
-                    show_think_tags = request_model != "GLM-4.5-fast"
+                    # Apply filtering based on SHOW_THINK_TAGS and phase
                     should_send_content = True
 
-                    if not show_think_tags and phase == "thinking":
-                        # Skip thinking content when show_think_tags=false
+                    if not settings.SHOW_THINK_TAGS and phase == "thinking":
+                        # Skip thinking content when SHOW_THINK_TAGS=false
                         should_send_content = False
-                        logger.debug(f"Skipping thinking content (show_think_tags=false)")
+                        logger.debug(f"Skipping thinking content (SHOW_THINK_TAGS=false)")
 
                     # Process and send content immediately if we should
                     if delta_content and should_send_content:
                         # Minimal transformation for real-time streaming
                         transformed_delta = delta_content
 
-                        if show_think_tags:
+                        if settings.SHOW_THINK_TAGS:
                             # Simple tag replacement for streaming
                             transformed_delta = re.sub(r'<details[^>]*>', '<think>', transformed_delta)
                             transformed_delta = transformed_delta.replace('</details>', '</think>')
@@ -398,7 +430,7 @@ class ProxyHandler:
             yield f"data: {json.dumps(error_chunk)}\n\n"
 
     async def non_stream_response(
-        self, response: httpx.Response, model: str, request_model: str = "GLM-4.5"
+        self, response: httpx.Response, model: str
     ) -> ChatCompletionResponse:
         """Generate non-streaming response"""
         chunks = []
@@ -412,12 +444,9 @@ class ProxyHandler:
         logger.info(f"Total chunks received: {len(chunks)}")
         logger.debug(f"First chunk structure: {chunks[0] if chunks else 'None'}")
 
-        # Determine if thinking content should be shown based on model type
-        show_think_tags = request_model != "GLM-4.5-fast"
-
-        # Aggregate content based on show_think_tags setting
-        if show_think_tags:
-            # When show_think_tags=true, prioritize edit_content for formatted thinking content
+        # Aggregate content based on SHOW_THINK_TAGS setting
+        if settings.SHOW_THINK_TAGS:
+            # When SHOW_THINK_TAGS=true, prioritize edit_content for formatted thinking content
             edit_contents = []
             for chunk in chunks:
                 edit_content = chunk.get("data", {}).get("edit_content", "")
@@ -446,7 +475,7 @@ class ProxyHandler:
         )  # Show full content for debugging
 
         # Apply content transformation (including think tag filtering)
-        transformed_content = self.transform_content(full_content, show_think_tags)
+        transformed_content = self.transform_content(full_content)
 
         logger.info(f"Transformed content length: {len(transformed_content)}")
         logger.debug(f"Transformed content: {transformed_content[:200]}...")
@@ -479,9 +508,6 @@ class ProxyHandler:
         request_data = request.model_dump(exclude_none=True)
         target_model = "0727-360B-API"  # Map GLM-4.5 to Z.AI model
 
-        # Determine if thinking should be enabled based on model type
-        enable_thinking = request.model != "GLM-4.5-fast"
-
         # Build Z.AI request format
         request_data = {
             "stream": True,  # Always request streaming from Z.AI
@@ -496,8 +522,7 @@ class ProxyHandler:
                 "image_generation": False,
                 "code_interpreter": False,
                 "web_search": False,
-                "auto_web_search": False,
-                "enable_thinking": enable_thinking,  # Enable thinking based on model type
+                "auto_web_search": False
             },
             "id": str(uuid.uuid4()),
             "mcp_servers": ["deep-web-search"],
@@ -531,9 +556,6 @@ class ProxyHandler:
 
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
         current_phase = None
-        
-        # Determine if thinking content should be shown based on model type
-        show_think_tags = request.model != "GLM-4.5-fast"
 
         try:
             # Create a new client for this streaming request to avoid conflicts
@@ -636,15 +658,15 @@ class ProxyHandler:
                                     current_phase = phase
                                     logger.debug(f"Phase changed to: {phase}")
 
-                                # Apply filtering based on model type and phase
+                                # Apply filtering based on SHOW_THINK_TAGS and phase
                                 should_send_content = True
 
-                                if not show_think_tags and phase == "thinking":
+                                if not settings.SHOW_THINK_TAGS and phase == "thinking":
                                     should_send_content = False
 
-                                # For streaming, prioritize edit_content when available and show_think_tags=true
+                                # For streaming, prioritize edit_content when available and SHOW_THINK_TAGS=true
                                 content_to_send = delta_content
-                                if show_think_tags and edit_content:
+                                if settings.SHOW_THINK_TAGS and edit_content:
                                     # In streaming mode, we still use delta_content for real-time experience
                                     # but we could enhance this to use edit_content when appropriate
                                     content_to_send = delta_content
@@ -654,7 +676,7 @@ class ProxyHandler:
                                     # Minimal transformation for real-time streaming
                                     transformed_delta = content_to_send
 
-                                    if show_think_tags:
+                                    if settings.SHOW_THINK_TAGS:
                                         # Simple tag replacement for streaming
                                         transformed_delta = re.sub(r'<details[^>]*>', '<think>', transformed_delta)
                                         transformed_delta = transformed_delta.replace('</details>', '</think>')

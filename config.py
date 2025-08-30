@@ -17,14 +17,12 @@ class Settings:
     UPSTREAM_MODEL: str = "0727-360B-API"
 
     # Model settings (OpenAI SDK compatible)
-    MODEL_NAME: str = "GLM-4.5"
+    MODEL_NAMES: list = ["GLM-4.5", "GLM-4.5-fast"]
     MODEL_ID: str = "GLM-4.5"
 
     # API Key for external authentication
     API_KEY: str = os.getenv("API_KEY", "sk-z2api-key-2024")
 
-    # Content filtering settings (only applies to non-streaming responses)
-    SHOW_THINK_TAGS: bool = os.getenv("SHOW_THINK_TAGS", "false").lower() in ("true", "1", "yes")
 
     # Response mode settings
     DEFAULT_STREAM: bool = os.getenv("DEFAULT_STREAM", "false").lower() in ("true", "1", "yes")

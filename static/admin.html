@@ -555,9 +555,9 @@
             <div id="cookie-page" class="page active">
                 <!-- 添加Cookie区域 -->
                 <div class="add-cookie-section">
-                    <h2>🍪 添加 Cookie</h2>
+                    <h2>🍪 添加账号</h2>
                     <div class="form-group">
-                        <label for="new-cookies">Z.AI Cookie (一行一个)</label>
+                        <label for="new-cookies">Z.AI 账号 (一行一个)</label>
                         <textarea 
                             id="new-cookies" 
                             class="add-cookie-textarea"
@@ -572,7 +572,7 @@
                         </small>
                     </div>
                     <div class="action-buttons">
-                        <button onclick="addCookies()" class="btn-success">📥 添加 Cookie</button>
+                        <button onclick="addCookies()" class="btn-success">📥 添加账号</button>
                         <button onclick="clearNewCookies()" class="btn-danger">🗑️ 清空输入</button>
                     </div>
                 </div>
@@ -596,10 +596,10 @@
                     </div>
                     
                     <div class="action-buttons">
-                        <button onclick="exportAllCookies()" class="btn-success">📥 导出所有Cookie</button>
-                        <button onclick="refreshCookieTokens()" class="btn-warning">🔄 批量刷新令牌</button>
+                        <button onclick="exportAllCookies()" class="btn-success">📥 导出所有账号</button>
+                        <button onclick="refreshCookieTokens()" class="btn-warning">🔄 刷新所有 Cookie</button>
                         <button onclick="refreshCookieStatus()" class="btn-warning">🔄 刷新状态</button>
-                        <button onclick="removeInvalidCookies()" class="btn-danger">🗑️ 一键删除无效 Cookie</button>
+                        <button onclick="removeInvalidCookies()" class="btn-danger">🗑️ 删除无效 Cookie</button>
                         <button onclick="clearAllCookies()" class="btn-danger">🗑️ 清空所有 Cookie</button>
                     </div>
                 </div>
@@ -1395,7 +1395,8 @@
                     }
                 } else {
                     const error = await response.json();
-                    showNotification(error.detail || '刷新Cookie失败', 'error');
+                    const errorMessage = error.detail || error.message || '刷新Cookie失败';
+                    showNotification(errorMessage, 'error');
                 }
                 
             } catch (error) {
@@ -1429,7 +1430,8 @@
                     await loadCookies();
                 } else {
                     const error = await response.json();
-                    showNotification(error.detail || '验证Cookie失败', 'error');
+                    const errorMessage = error.detail || error.message || '验证Cookie失败';
+                    showNotification(errorMessage, 'error');
                 }
                 
             } catch (error) {

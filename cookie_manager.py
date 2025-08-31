@@ -494,10 +494,10 @@ class CookieManager:
     async def refresh_single_token(self, cookie_value: str) -> Dict[str, Any]:
         """刷新单个Cookie的token"""
         try:
-            # 查找cookie的账号信息
-            cookie_info = self.get_cookie_info(cookie_value)
+            # 智能查找cookie信息
+            cookie_info = self._find_cookie_info_with_credentials(cookie_value)
             
-            if not cookie_info.get('has_credentials') or not cookie_info.get('email') or not cookie_info.get('password'):
+            if not cookie_info:
                 return {
                     "success": False,
                     "message": "该Cookie没有账号密码信息，无法刷新",
@@ -581,6 +581,45 @@ class CookieManager:
                 "message": f"刷新失败: {str(e)}",
                 "refreshed_count": 0
             }
+    
+    def _find_cookie_info_with_credentials(self, cookie_value: str) -> Optional[Dict[str, Any]]:
+        """智能查找包含账号密码信息的cookie对象"""
+        if not cookie_value:
+            return None
+            
+        # 1. 尝试直接查找
+        cookie_info = self.get_cookie_info(cookie_value)
+        if cookie_info.get('has_credentials') and cookie_info.get('email') and cookie_info.get('password'):
+            return cookie_info
+        
+        # 2. 尝试提取token后查找
+        token_from_value = self._extract_token(cookie_value)
+        if token_from_value and token_from_value != cookie_value:
+            cookie_info = self.get_cookie_info(token_from_value)
+            if cookie_info.get('has_credentials') and cookie_info.get('email') and cookie_info.get('password'):
+                return cookie_info
+        
+        # 3. 遍历所有cookie_info，查找匹配的raw_cookie或token
+        for cookie_key, info in self.cookie_info.items():
+            if (info.get('raw_cookie') == cookie_value or 
+                info.get('token') == cookie_value or
+                (info.get('has_credentials') and cookie_value in [cookie_key, info.get('raw_cookie'), info.get('token')])):
+                if info.get('has_credentials') and info.get('email') and info.get('password'):
+                    return info
+        
+        # 4. 最后尝试：如果cookie_value是完整格式，手动解析
+        if '----' in cookie_value:
+            parts = cookie_value.split('----')
+            if len(parts) >= 2:
+                # 至少有邮箱和密码
+                return {
+                    'email': parts[0],
+                    'password': parts[1],
+                    'has_credentials': True,
+                    'raw_cookie': cookie_value
+                }
+        
+        return None
     
     def get_cookie_info(self, cookie: str) -> Dict[str, Any]:
         """获取cookie的附加信息"""

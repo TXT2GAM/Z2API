@@ -635,12 +635,12 @@
                         <table class="cookie-table" id="cookie-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 80px; text-align: center;">序号</th>
-                                    <th style="width: 200px; text-align: center;">账号</th>
+                                    <th style="width: 60px; text-align: center;">序号</th>
+                                    <th style="width: 180px; text-align: center;">账号</th>
                                     <th style="width: 120px; text-align: center;">密码</th>
                                     <th style="text-align: center;">Cookie</th>
-                                    <th style="width: 120px; text-align: center;">状态</th>
-                                    <th style="width: 150px; text-align: center;">操作</th>
+                                    <th style="width: 80px; text-align: center;">状态</th>
+                                    <th style="width: 220px; text-align: center;">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="cookie-table-body">
@@ -942,6 +942,9 @@
                 const displayIndex = startIndex + index;
                 const cookieInfo = cookieInfoData[cookie] || {};
                 
+                // 确定用于刷新的原始cookie值（始终使用完整格式）
+                let cookieForOperations = cookieInfo.raw_cookie || cookie;
+                
                 // Cookie显示：前20个字符 + ... + 后20个字符
                 let cookieToShow = cookie;
                 let preview;
@@ -989,8 +992,8 @@
                         <td style="text-align: center;"><span class="copyable cookie-preview" onclick="copyToClipboard('${cookieToShow}')" title="${cookieToShow}">${preview}</span></td>
                         <td style="text-align: center;"><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td style="text-align: center;">
-                            <button onclick="refreshSingleCookie('${cookie}')" class="btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">刷新</button>
-                            <button onclick="verifyCookie('${cookie}')" class="btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">验证</button>
+                            <button onclick="refreshSingleCookie('${cookieForOperations}')" class="btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">刷新</button>
+                            <button onclick="verifyCookie('${cookieForOperations}')" class="btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">验证</button>
                             <button onclick="removeCookie('${cookie}')" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">删除</button>
                         </td>
                     </tr>

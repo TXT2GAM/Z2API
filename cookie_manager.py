@@ -133,6 +133,11 @@ class CookieManager:
     async def health_check(self, cookie: str) -> bool:
         """Check if a cookie is still valid"""
         try:
+            # Extract the actual token from cookie string
+            actual_token = self._extract_token(cookie)
+            if not actual_token:
+                return False
+            
             # Use a shared client configuration for health checks
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0, connect=5.0, read=5.0),
@@ -179,7 +184,7 @@ class CookieManager:
                 response = await client.post(
                     "https://chat.z.ai/api/chat/completions",
                     headers={
-                        "Authorization": f"Bearer {cookie}",
+                        "Authorization": f"Bearer {actual_token}",
                         "Content-Type": "application/json",
                         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
                         "Accept": "application/json, text/event-stream",

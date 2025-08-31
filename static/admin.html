@@ -412,6 +412,26 @@
             color: #1a202c;
         }
 
+        .copyable {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: #1a202c;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: inline-block;
+            min-width: 20px;
+        }
+
+        .copyable:hover {
+            background-color: #e2e8f0;
+        }
+
+        .copyable:active {
+            background-color: #cbd5e0;
+        }
+
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
@@ -792,6 +812,27 @@
             }, 3000);
         }
 
+        // 复制文本到剪贴板
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showNotification('已复制到剪贴板', 'success');
+            } catch (err) {
+                // 降级方案
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification('已复制到剪贴板', 'success');
+                } catch (err) {
+                    showNotification('复制失败，请手动复制', 'error');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
         // 载入 Cookie 状态
         async function loadCookies() {
             try {
@@ -924,9 +965,9 @@
                 let accountDisplay = '';
                 if (cookieInfo.has_credentials) {
                     if (cookieInfo.needs_token) {
-                        accountDisplay = `${cookieInfo.email}<br><small style="color: #ed8936;">(需要获取Token)</small>`;
+                        accountDisplay = `<span class="copyable" onclick="copyToClipboard('${cookieInfo.email}')" title="点击复制">${cookieInfo.email}</span><br><small style="color: #ed8936;">(需要获取Token)</small>`;
                     } else {
-                        accountDisplay = cookieInfo.email;
+                        accountDisplay = `<span class="copyable" onclick="copyToClipboard('${cookieInfo.email}')" title="点击复制">${cookieInfo.email}</span>`;
                     }
                 }
                 
@@ -934,7 +975,7 @@
                 let passwordDisplay = '';
                 if (cookieInfo.has_credentials) {
                     if (cookieInfo.password) {
-                        passwordDisplay = cookieInfo.password;
+                        passwordDisplay = `<span class="copyable" onclick="copyToClipboard('${cookieInfo.password}')" title="点击复制">${cookieInfo.password}</span>`;
                     } else {
                         passwordDisplay = '-';
                     }
@@ -945,10 +986,12 @@
                         <td style="text-align: center;">${displayIndex + 1}</td>
                         <td style="text-align: center;">${accountDisplay}</td>
                         <td style="text-align: center;">${passwordDisplay}</td>
-                        <td class="cookie-preview" title="${cookieToShow}" style="text-align: center;">${preview}</td>
+                        <td style="text-align: center;"><span class="copyable cookie-preview" onclick="copyToClipboard('${cookieToShow}')" title="${cookieToShow}">${preview}</span></td>
                         <td style="text-align: center;"><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td style="text-align: center;">
-                            <button onclick="removeCookie('${cookie}')" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">🗑️ 删除</button>
+                            <button onclick="refreshSingleCookie('${cookie}')" class="btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">刷新</button>
+                            <button onclick="verifyCookie('${cookie}')" class="btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 2px;">验证</button>
+                            <button onclick="removeCookie('${cookie}')" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">删除</button>
                         </td>
                     </tr>
                 `;
@@ -1326,6 +1369,72 @@
             }
         }
 
+        // 刷新单个Cookie
+        async function refreshSingleCookie(cookieValue) {
+            try {
+                showNotification('正在刷新Cookie...', 'warning');
+                
+                const response = await fetch(`${API_BASE}/cookies/refresh/single`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookie: cookieValue })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(result.message, 'success');
+                    
+                    // 如果刷新成功，重新加载数据
+                    if (result.success) {
+                        await loadCookies();
+                    }
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail || '刷新Cookie失败', 'error');
+                }
+                
+            } catch (error) {
+                console.error('刷新Cookie失败:', error);
+                showNotification('刷新Cookie失败', 'error');
+            }
+        }
+
+        // 验证单个Cookie
+        async function verifyCookie(cookieValue) {
+            try {
+                showNotification('正在验证Cookie...', 'warning');
+                
+                const response = await fetch(`${API_BASE}/cookies/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cookie: cookieValue })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.valid) {
+                        showNotification('Cookie验证成功', 'success');
+                    } else {
+                        showNotification('Cookie验证失败：' + (result.message || '无效'), 'error');
+                    }
+                    
+                    // 重新加载数据以更新状态
+                    await loadCookies();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.detail || '验证Cookie失败', 'error');
+                }
+                
+            } catch (error) {
+                console.error('验证Cookie失败:', error);
+                showNotification('验证Cookie失败', 'error');
+            }
+        }
+
         // 一键删除所有无效Cookie
         async function removeInvalidCookies() {
             try {
@@ -1380,22 +1489,12 @@
                     return;
                 }
                 
-                // 创建txt文件内容
-                let fileContent = `Z2API Cookie 导出\n`;
-                fileContent += `导出时间: ${new Date().toLocaleString('zh-CN')}\n`;
-                fileContent += `总数量: ${data.count}\n`;
-                fileContent += `失败数量: ${data.failed_count}\n`;
-                fileContent += `可用数量: ${data.count - data.failed_count}\n`;
-                fileContent += `\n`;
-                fileContent += `=== 所有 Cookie ===\n`;
-                fileContent += `\n`;
+                // 导出原始格式，一行一个 "邮箱----密码----Cookie"
+                let fileContent = '';
                 
-                // 添加每个cookie，标记状态
-                data.cookies.forEach((cookie, index) => {
-                    const isFailed = data.failed_cookies && data.failed_cookies.includes(cookie);
-                    const status = isFailed ? '[失败]' : '[可用]';
-                    fileContent += `${index + 1}. ${status} ${cookie}\n`;
-                    fileContent += `\n`;
+                // 添加每个cookie的原始格式
+                data.cookies.forEach((cookie) => {
+                    fileContent += `${cookie}\n`;
                 });
                 
                 // 创建下载链接
@@ -1409,7 +1508,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                showNotification(`已导出 ${data.count} 个 Cookie 到txt文件`);
+                showNotification(`已导出 ${data.count} 个 Cookie`);
             } catch (error) {
                 console.error('导出 Cookie 失败:', error);
                 showNotification('导出 Cookie 失败', 'error');

@@ -19,6 +19,9 @@ router = APIRouter()
 
 class CookieUpdateRequest(BaseModel):
     cookies: List[str]
+
+class SingleCookieRequest(BaseModel):
+    cookie: str
     
 class ConfigUpdateRequest(BaseModel):
     api_key: Optional[str] = None
@@ -154,6 +157,57 @@ async def refresh_cookies():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"刷新 Cookies 失败: {str(e)}")
+
+@router.post("/api/cookies/refresh/single")
+async def refresh_single_cookie(request: SingleCookieRequest):
+    """刷新单个 Cookie 令牌"""
+    try:
+        cookie = request.cookie
+        if not cookie:
+            raise HTTPException(status_code=400, detail="请提供 Cookie")
+        
+        # 尝试刷新单个cookie
+        result = await cookie_manager.refresh_single_token(cookie)
+        
+        # 如果刷新成功，更新settings
+        if result["success"]:
+            settings.COOKIES = cookie_manager.cookies
+            
+            # 更新环境文件（如果存在）
+            env_file = os.path.join(os.getcwd(), '.env')
+            if os.path.exists(env_file):
+                try:
+                    set_key(env_file, 'Z_AI_COOKIES', ','.join(settings.COOKIES))
+                    logger.info(f"Updated single cookie in .env file")
+                except Exception as e:
+                    print(f"Warning: Could not update .env file: {e}")
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"刷新单个 Cookie 失败: {str(e)}")
+
+@router.post("/api/cookies/verify")
+async def verify_cookie(request: SingleCookieRequest):
+    """验证单个 Cookie 有效性"""
+    try:
+        cookie = request.cookie
+        if not cookie:
+            raise HTTPException(status_code=400, detail="请提供 Cookie")
+        
+        # 发送测试消息验证cookie有效性
+        is_valid = await cookie_manager.health_check(cookie)
+        
+        return {
+            "valid": is_valid,
+            "cookie": cookie[:20] + "..." if len(cookie) > 20 else cookie,
+            "message": "Cookie 有效" if is_valid else "Cookie 无效"
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "cookie": cookie[:20] + "..." if len(cookie) > 20 else cookie,
+            "message": f"验证失败: {str(e)}"
+        }
 
 @router.get("/api/config")
 async def get_config():

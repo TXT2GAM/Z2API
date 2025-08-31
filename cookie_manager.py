@@ -485,6 +485,97 @@ class CookieManager:
             "total_count": total_count,
             "updated_cookies": updated_cookies
         }
+
+    async def refresh_single_token(self, cookie_value: str) -> Dict[str, Any]:
+        """刷新单个Cookie的token"""
+        try:
+            # 查找cookie的账号信息
+            cookie_info = self.get_cookie_info(cookie_value)
+            
+            if not cookie_info.get('has_credentials') or not cookie_info.get('email') or not cookie_info.get('password'):
+                return {
+                    "success": False,
+                    "message": "该Cookie没有账号密码信息，无法刷新",
+                    "refreshed_count": 0
+                }
+            
+            email = cookie_info['email']
+            password = cookie_info['password']
+            
+            # 刷新token
+            new_token = await self.refresh_token(email, password)
+            if not new_token:
+                return {
+                    "success": False,
+                    "message": "刷新token失败",
+                    "refreshed_count": 0
+                }
+            
+            # 更新cookie列表
+            old_cookies_list = self.cookies.copy()
+            cookie_found = False
+            cookie_index = -1
+            
+            # 查找并替换旧的cookie
+            if cookie_value in old_cookies_list:
+                index = old_cookies_list.index(cookie_value)
+                cookie_found = True
+                cookie_index = index
+            else:
+                # 查找包含这个raw_cookie的entry
+                for i, cookie in enumerate(old_cookies_list):
+                    if cookie == cookie_value or (self.cookie_info.get(cookie) and self.cookie_info[cookie].get('raw_cookie') == cookie_value):
+                        cookie_found = True
+                        cookie_index = i
+                        break
+            
+            if not cookie_found:
+                return {
+                    "success": False,
+                    "message": "未找到对应的Cookie",
+                    "refreshed_count": 0
+                }
+            
+            # 创建完整格式的新cookie
+            full_format_cookie = f"{email}----{password}----{new_token}"
+            
+            # 更新cookie列表
+            old_cookies_list[cookie_index] = full_format_cookie
+            
+            # 创建新的cookie_info
+            new_info = {
+                'email': email,
+                'password': password,
+                'has_credentials': True,
+                'raw_cookie': full_format_cookie,
+                'token': new_token
+            }
+            self.cookie_info[full_format_cookie] = new_info
+            self.cookie_info[new_token] = new_info
+            
+            # 清理旧的entry
+            if cookie_value in self.cookie_info and cookie_value != new_token:
+                del self.cookie_info[cookie_value]
+            
+            # 更新cookies列表
+            async with self.lock:
+                self.cookies = old_cookies_list
+            
+            logger.info(f"Single token refreshed for {email}")
+            
+            return {
+                "success": True,
+                "message": f"单个Cookie刷新成功: {email}",
+                "refreshed_count": 1
+            }
+            
+        except Exception as e:
+            logger.error(f"Single token refresh failed: {e}")
+            return {
+                "success": False,
+                "message": f"刷新失败: {str(e)}",
+                "refreshed_count": 0
+            }
     
     def get_cookie_info(self, cookie: str) -> Dict[str, Any]:
         """获取cookie的附加信息"""

@@ -50,9 +50,15 @@ docker compose up -d
 ```
 
 ---
+### 说明
 
-### 前端管理
+#### 前端管理
 
 https://0.0.0.0:8000/admin
+
+#### 支持模型
+
+`GLM-4.5`
+`GLM-4.5-thinking`
 
 ---

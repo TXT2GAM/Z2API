@@ -8,7 +8,7 @@ services:
       - HOST=${HOST:-0.0.0.0} # 监听地址
       - PORT=${PORT:-8000} # 监听端口
       - API_KEY=${API_KEY:-sk-z2api-key-2024} # 鉴权密钥
-      - SHOW_THINK_TAGS=${SHOW_THINK_TAGS:-false} # 思考标签
+      - ADMIN_ACCESS_KEY=${ADMIN_ACCESS_KEY:-admin123} # 管理面板访问密钥
       - DEFAULT_STREAM=${DEFAULT_STREAM:-false} # 流式
       - Z_AI_COOKIES=${Z_AI_COOKIES} # Z.AI的JWT令牌
       - LOG_LEVEL=${LOG_LEVEL:-ERROR} # 日志级别

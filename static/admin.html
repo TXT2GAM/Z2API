@@ -37,7 +37,8 @@
             justify-content: space-between;
             align-items: center;
             max-width: 1200px;
-            margin: 0 20px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
 
         .header-title {
@@ -229,13 +230,17 @@
             color: white;
             font-weight: 600;
             z-index: 1000;
-            transform: translateX(100%);
+            transform: translateX(calc(100% + 20px));
             transition: transform 0.3s;
             max-width: 400px;
+            opacity: 0;
+            visibility: hidden;
         }
 
         .notification.show {
             transform: translateX(0);
+            opacity: 1;
+            visibility: visible;
         }
 
         .notification.success {
@@ -536,16 +541,107 @@
             outline: none;
             border-color: #667eea;
         }
+        
+        /* 鉴权界面样式 */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .auth-box {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .auth-title {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #4a5568;
+        }
+        
+        .auth-subtitle {
+            color: #718096;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        
+        .auth-input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.3s;
+            text-align: center;
+        }
+        
+        .auth-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .auth-button {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 0;
+        }
+        
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .auth-error {
+            color: #e53e3e;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
+    <!-- 鉴权界面 -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-box">
+            <h2 class="auth-title">🔒 管理员验证</h2>
+            <p class="auth-subtitle">请输入管理密钥以访问 Z2API 管理界面</p>
+            <input type="password" id="auth-key" class="auth-input" placeholder="请输入管理密钥" maxlength="50">
+            <button onclick="verifyAuth()" class="auth-button">🔑 验证访问</button>
+            <div id="auth-error" class="auth-error" style="display: none;"></div>
+        </div>
+    </div>
+    
     <header>
         <div class="header-content">
             <div class="header-title">
                 <h1>Z2API 管理界面</h1>
                 <p class="subtitle" id="page-subtitle">Cookie 池管理</p>
             </div>
-            <button class="gear-button" onclick="togglePage()" title="设置">⚙️</button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="gear-button" onclick="logout()" title="退出管理" style="background: rgba(231, 76, 60, 0.2); border-color: #e74c3c; color: white; font-size: 1.2rem;">🚪</button>
+                <button class="gear-button" onclick="togglePage()" title="设置">⚙️</button>
+            </div>
         </div>
     </header>
 
@@ -676,6 +772,11 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="admin-access-key">管理密钥</label>
+                            <input type="password" id="admin-access-key" placeholder="admin123">
+                        </div>
+
+                        <div class="form-group">
                             <label for="host">服务器地址</label>
                             <input type="text" id="host" placeholder="0.0.0.0">
                         </div>
@@ -695,13 +796,6 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="show-think">显示思考标签</label>
-                            <select id="show-think">
-                                <option value="true">是</option>
-                                <option value="false">否</option>
-                            </select>
-                        </div>
 
                         <div class="form-group">
                             <label for="default-stream">默认流式模式</label>
@@ -776,8 +870,110 @@
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
-            loadCookies();
+            checkAuth();
         });
+        
+        // 检查鉴权状态
+        function checkAuth() {
+            const authKey = localStorage.getItem('z2api_auth_key');
+            if (authKey) {
+                verifyStoredAuth(authKey);
+            } else {
+                showAuthOverlay();
+            }
+        }
+        
+        // 显示鉴权界面
+        function showAuthOverlay() {
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('auth-key').focus();
+            
+            // 添加回车键监听
+            document.getElementById('auth-key').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verifyAuth();
+                }
+            });
+        }
+        
+        // 隐藏鉴权界面
+        function hideAuthOverlay() {
+            document.getElementById('auth-overlay').style.display = 'none';
+        }
+        
+        // 验证鉴权密钥
+        async function verifyAuth() {
+            const authKey = document.getElementById('auth-key').value.trim();
+            const errorElement = document.getElementById('auth-error');
+            
+            if (!authKey) {
+                showAuthError('请输入管理密钥');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                if (response.ok) {
+                    const config = await response.json();
+                    if (authKey === config.admin_access_key) {
+                        localStorage.setItem('z2api_auth_key', authKey);
+                        hideAuthOverlay();
+                        loadCookies(); // 加载主界面
+                        showNotification('验证成功，欢迎使用 Z2API 管理界面', 'success');
+                    } else {
+                        showAuthError('管理密钥错误，请重新输入');
+                    }
+                } else {
+                    showAuthError('无法连接到服务器，请稍后再试');
+                }
+            } catch (error) {
+                console.error('验证鉴权失败:', error);
+                showAuthError('网络错误，请稍后再试');
+            }
+        }
+        
+        // 验证存储的鉴权密钥
+        async function verifyStoredAuth(authKey) {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                if (response.ok) {
+                    const config = await response.json();
+                    if (authKey === config.admin_access_key) {
+                        hideAuthOverlay();
+                        loadCookies(); // 加载主界面
+                    } else {
+                        localStorage.removeItem('z2api_auth_key');
+                        showAuthOverlay();
+                    }
+                } else {
+                    showAuthOverlay();
+                }
+            } catch (error) {
+                console.error('验证存储的鉴权失败:', error);
+                showAuthOverlay();
+            }
+        }
+        
+        // 显示鉴权错误
+        function showAuthError(message) {
+            const errorElement = document.getElementById('auth-error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // 3秒后隐藏错误信息
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 登出功能
+        function logout() {
+            if (confirm('确定要退出管理界面吗？')) {
+                localStorage.removeItem('z2api_auth_key');
+                showAuthOverlay();
+                showNotification('已退出管理界面', 'warning');
+            }
+        }
 
         // 切换页面
         function togglePage() {
@@ -1555,42 +1751,67 @@
                 const response = await fetch(`${API_BASE}/config`);
                 const data = await response.json();
                 
-                document.getElementById('api-key').value = data.api_key || '';
-                document.getElementById('host').value = data.host || '';
-                document.getElementById('port').value = data.port || '';
-                document.getElementById('log-level').value = data.log_level || 'INFO';
-                document.getElementById('show-think').value = data.show_think_tags.toString();
-                document.getElementById('default-stream').value = data.default_stream.toString();
-                document.getElementById('max-connections').value = data.max_connections || '';
-                document.getElementById('max-keepalive').value = data.max_keepalive_connections || '';
-                document.getElementById('keepalive-expiry').value = data.keepalive_expiry || '';
-                document.getElementById('auto-refresh').value = data.auto_refresh_tokens.toString();
-                document.getElementById('refresh-interval').value = data.refresh_check_interval || '';
-                document.getElementById('response-timeout').value = data.response_timeout || '';
-                document.getElementById('connect-timeout').value = data.connect_timeout || '';
+                // 安全地设置每个字段，避免因为字段不存在导致错误
+                const setFieldValue = (fieldId, value, defaultValue = '') => {
+                    const element = document.getElementById(fieldId);
+                    if (element) {
+                        element.value = value !== undefined && value !== null ? value : defaultValue;
+                    }
+                };
+                
+                setFieldValue('api-key', data.api_key);
+                setFieldValue('admin-access-key', data.admin_access_key);
+                setFieldValue('host', data.host);
+                setFieldValue('port', data.port);
+                setFieldValue('log-level', data.log_level, 'INFO');
+                setFieldValue('default-stream', data.default_stream !== undefined ? data.default_stream.toString() : 'false');
+                setFieldValue('max-connections', data.max_connections);
+                setFieldValue('max-keepalive', data.max_keepalive_connections);
+                setFieldValue('keepalive-expiry', data.keepalive_expiry);
+                setFieldValue('auto-refresh', data.auto_refresh_tokens !== undefined ? data.auto_refresh_tokens.toString() : 'false');
+                setFieldValue('refresh-interval', data.refresh_check_interval);
+                setFieldValue('response-timeout', data.response_timeout);
+                setFieldValue('connect-timeout', data.connect_timeout);
                 
             } catch (error) {
                 console.error('加载配置失败:', error);
-                showNotification('加载配置失败', 'error');
+                showNotification('加载配置失败: ' + (error.message || error), 'error');
             }
         }
 
         // 更新配置
         async function updateConfig() {
+            // 安全地获取表单值
+            const getFieldValue = (fieldId, type = 'string', fallback = undefined) => {
+                const element = document.getElementById(fieldId);
+                if (!element || !element.value.trim()) return fallback;
+                
+                const value = element.value.trim();
+                switch (type) {
+                    case 'int':
+                        const intVal = parseInt(value);
+                        return isNaN(intVal) ? fallback : intVal;
+                    case 'bool':
+                        return value === 'true';
+                    default:
+                        return value;
+                }
+            };
+            
             const config = {
-                api_key: document.getElementById('api-key').value || undefined,
-                host: document.getElementById('host').value || undefined,
-                port: document.getElementById('port').value ? parseInt(document.getElementById('port').value) : undefined,
-                log_level: document.getElementById('log-level').value || undefined,
-                show_think_tags: document.getElementById('show-think').value === 'true',
-                default_stream: document.getElementById('default-stream').value === 'true',
-                max_connections: document.getElementById('max-connections').value ? parseInt(document.getElementById('max-connections').value) : undefined,
-                max_keepalive_connections: document.getElementById('max-keepalive').value ? parseInt(document.getElementById('max-keepalive').value) : undefined,
-                keepalive_expiry: document.getElementById('keepalive-expiry').value ? parseInt(document.getElementById('keepalive-expiry').value) : undefined,
-                auto_refresh_tokens: document.getElementById('auto-refresh').value === 'true',
-                refresh_check_interval: document.getElementById('refresh-interval').value ? parseInt(document.getElementById('refresh-interval').value) : undefined,
-                response_timeout: document.getElementById('response-timeout').value ? parseInt(document.getElementById('response-timeout').value) : undefined,
-                connect_timeout: document.getElementById('connect-timeout').value ? parseInt(document.getElementById('connect-timeout').value) : undefined
+                api_key: getFieldValue('api-key'),
+                admin_access_key: getFieldValue('admin-access-key'),
+                host: getFieldValue('host'),
+                port: getFieldValue('port', 'int'),
+                log_level: getFieldValue('log-level'),
+                default_stream: getFieldValue('default-stream', 'bool'),
+                max_connections: getFieldValue('max-connections', 'int'),
+                max_keepalive_connections: getFieldValue('max-keepalive', 'int'),
+                keepalive_expiry: getFieldValue('keepalive-expiry', 'int'),
+                auto_refresh_tokens: getFieldValue('auto-refresh', 'bool'),
+                refresh_check_interval: getFieldValue('refresh-interval', 'int'),
+                response_timeout: getFieldValue('response-timeout', 'int'),
+                connect_timeout: getFieldValue('connect-timeout', 'int')
             };
             
             // 过滤掉 undefined 的值

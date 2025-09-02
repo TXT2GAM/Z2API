@@ -25,7 +25,7 @@ class SingleCookieRequest(BaseModel):
     
 class ConfigUpdateRequest(BaseModel):
     api_key: Optional[str] = None
-    show_think_tags: Optional[bool] = None
+    admin_access_key: Optional[str] = None
     default_stream: Optional[bool] = None
     log_level: Optional[str] = None
     port: Optional[int] = None
@@ -214,7 +214,7 @@ async def get_config():
     """获取当前配置"""
     return {
         "api_key": settings.API_KEY,
-        "show_think_tags": settings.SHOW_THINK_TAGS,
+        "admin_access_key": settings.ADMIN_ACCESS_KEY,
         "default_stream": settings.DEFAULT_STREAM,
         "log_level": settings.LOG_LEVEL,
         "port": settings.PORT,

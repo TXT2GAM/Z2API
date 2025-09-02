@@ -26,6 +26,9 @@ class Settings:
 
     # API Key for external authentication
     API_KEY: str = os.getenv("API_KEY", "sk-z2api-key-2024")
+    
+    # Admin panel access key
+    ADMIN_ACCESS_KEY: str = os.getenv("ADMIN_ACCESS_KEY", "admin123")
 
     # Content filtering settings removed - thinking content is always processed
 

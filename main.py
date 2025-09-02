@@ -125,6 +125,11 @@ async def list_models():
             id=settings.MODEL_ID,
             object="model",
             owned_by="z-ai"
+        ),
+        ModelInfo(
+            id=settings.THINKING_MODEL_ID,
+            object="model",
+            owned_by="z-ai"
         )
     ]
     return ModelsResponse(data=models)
@@ -144,10 +149,10 @@ async def chat_completions(
             )
 
         # Validate model
-        if request.model != settings.MODEL_NAME:
+        if request.model not in [settings.MODEL_NAME, settings.THINKING_MODEL_NAME]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Model '{request.model}' not supported. Use '{settings.MODEL_NAME}'"
+                detail=f"Model '{request.model}' not supported. Use '{settings.MODEL_NAME}' or '{settings.THINKING_MODEL_NAME}'"
             )
 
         async with ProxyHandler() as handler:

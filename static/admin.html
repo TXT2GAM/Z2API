@@ -1037,7 +1037,7 @@
                 
                 document.getElementById('total-cookies').textContent = data.count;
                 document.getElementById('failed-cookies').textContent = data.failed_count;
-                document.getElementById('available-cookies').textContent = data.count - data.failed_count;
+                document.getElementById('available-cookies').textContent = Math.max(0, data.count - data.failed_count);
                 
                 cookieData = data.cookies || [];
                 failedCookies = data.failed_cookies || [];
@@ -1331,7 +1331,7 @@
                 
                 document.getElementById('total-cookies').textContent = data.count;
                 document.getElementById('failed-cookies').textContent = data.failed_count;
-                document.getElementById('available-cookies').textContent = data.count - data.failed_count;
+                document.getElementById('available-cookies').textContent = Math.max(0, data.count - data.failed_count);
                 
                 cookieData = data.cookies || [];
                 failedCookies = data.failed_cookies || [];

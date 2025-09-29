@@ -57,12 +57,31 @@ async def get_cookies():
         else:
             # 已经是完整格式，直接使用
             processed_cookies.append(cookie)
-    
+
+    # 计算失败的cookie数量 - 基于处理后的cookies列表
+    processed_failed_cookies = []
+    for failed_cookie in cookie_manager.failed_cookies:
+        # 检查失败的cookie是否在处理后的列表中
+        if failed_cookie in processed_cookies:
+            processed_failed_cookies.append(failed_cookie)
+        else:
+            # 查找对应的处理后的cookie
+            for processed_cookie in processed_cookies:
+                # 检查token部分是否匹配
+                if '----' in processed_cookie:
+                    token_part = processed_cookie.split('----')[-1]
+                    if token_part == failed_cookie or failed_cookie == processed_cookie:
+                        processed_failed_cookies.append(processed_cookie)
+                        break
+                elif processed_cookie == failed_cookie:
+                    processed_failed_cookies.append(processed_cookie)
+                    break
+
     return {
         "cookies": processed_cookies,
         "count": len(processed_cookies),
-        "failed_count": len(cookie_manager.failed_cookies),
-        "failed_cookies": list(cookie_manager.failed_cookies)
+        "failed_count": len(processed_failed_cookies),
+        "failed_cookies": processed_failed_cookies
     }
 
 @router.post("/api/cookies")

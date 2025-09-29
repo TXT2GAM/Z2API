@@ -13,7 +13,7 @@ services:
       - Z_AI_COOKIES=${Z_AI_COOKIES} # Z.AI的JWT令牌
       - LOG_LEVEL=${LOG_LEVEL:-ERROR} # 日志级别
 
-      # 自动刷新设置 (当前未实现)
+      # 自动刷新设置
       - AUTO_REFRESH_TOKENS=${AUTO_REFRESH_TOKENS:-false} # 是否自动刷新令牌
       - REFRESH_CHECK_INTERVAL=${REFRESH_CHECK_INTERVAL:-3600} # 刷新检查间隔(秒)
       

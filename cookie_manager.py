@@ -213,12 +213,13 @@ class CookieManager:
             return False
     
     async def periodic_health_check(self):
-        """Periodically check all cookies health"""
+        """Periodically check all cookies health with refresh retry and auto-removal"""
         while True:
             try:
                 # Only check if we have cookies and some are marked as failed
                 if self.cookies and self.failed_cookies:
-                    logger.info(f"Running health check for {len(self.failed_cookies)} failed cookies")
+                    logger.info(f"Running enhanced health check for {len(self.failed_cookies)} failed cookies")
+                    cookies_to_remove = []
 
                     for cookie in list(self.failed_cookies):  # Create a copy to avoid modification during iteration
                         token = self._extract_token(cookie)
@@ -226,7 +227,29 @@ class CookieManager:
                             await self.mark_cookie_success(token)
                             logger.info(f"Cookie recovered: {cookie[:20]}...")
                         else:
-                            logger.debug(f"Cookie still failed: {cookie[:20]}...")
+                            logger.info(f"Cookie still failed: {cookie[:20]}..., attempting refresh")
+
+                            # 尝试刷新cookie
+                            refresh_success = await self._try_refresh_failed_cookie(cookie)
+
+                            if refresh_success:
+                                # 刷新成功后再次检查
+                                refreshed_token = self._extract_token(cookie)
+                                if refreshed_token and await self.health_check(refreshed_token):
+                                    await self.mark_cookie_success(refreshed_token)
+                                    logger.info(f"Cookie recovered after refresh: {cookie[:20]}...")
+                                else:
+                                    # 刷新后仍然失败，标记为移除
+                                    logger.warning(f"Cookie failed even after refresh, marking for removal: {cookie[:20]}...")
+                                    cookies_to_remove.append(cookie)
+                            else:
+                                # 无法刷新（纯cookie或刷新失败），标记为移除
+                                logger.warning(f"Cookie cannot be refreshed or refresh failed, marking for removal: {cookie[:20]}...")
+                                cookies_to_remove.append(cookie)
+
+                    # 批量移除失效的cookies
+                    if cookies_to_remove:
+                        await self._remove_cookies_permanently(cookies_to_remove)
 
                 # Wait 10 minutes before next check (reduced frequency)
                 await asyncio.sleep(600)
@@ -635,6 +658,144 @@ class CookieManager:
         self.cookie_info = {}
         self._parse_cookies()
         logger.info(f"Updated cookies: {len(new_cookies)} cookies loaded")
+
+    async def _try_refresh_failed_cookie(self, cookie: str) -> bool:
+        """尝试刷新失败的cookie"""
+        try:
+            # 查找cookie的账号密码信息
+            cookie_info = self._find_cookie_info_with_credentials(cookie)
+
+            if not cookie_info or not cookie_info.get('has_credentials'):
+                logger.debug(f"Cookie {cookie[:20]}... has no credentials, cannot refresh")
+                return False
+
+            email = cookie_info.get('email')
+            password = cookie_info.get('password')
+
+            if not email or not password:
+                logger.debug(f"Cookie {cookie[:20]}... missing email or password")
+                return False
+
+            # 尝试刷新token
+            new_token = await self.refresh_token(email, password)
+            if not new_token:
+                logger.warning(f"Failed to refresh token for {email}")
+                return False
+
+            # 更新cookie列表中的这个cookie
+            async with self.lock:
+                if cookie in self.cookies:
+                    index = self.cookies.index(cookie)
+                    # 创建新的完整格式cookie
+                    new_full_cookie = f"{email}----{password}----{new_token}"
+                    self.cookies[index] = new_full_cookie
+
+                    # 更新cookie_info
+                    new_info = {
+                        'email': email,
+                        'password': password,
+                        'has_credentials': True,
+                        'raw_cookie': new_full_cookie,
+                        'token': new_token
+                    }
+                    self.cookie_info[new_full_cookie] = new_info
+                    self.cookie_info[new_token] = new_info
+
+                    # 清理旧的entry
+                    if cookie in self.cookie_info and cookie != new_token:
+                        del self.cookie_info[cookie]
+
+                    # 更新failed_cookies集合
+                    self.failed_cookies.discard(cookie)
+                    self.failed_cookies.add(new_full_cookie)
+
+                    logger.info(f"Refreshed cookie for {email} during health check")
+                    return True
+                else:
+                    logger.warning(f"Cookie {cookie[:20]}... not found in cookies list")
+                    return False
+
+        except Exception as e:
+            logger.error(f"Error refreshing cookie {cookie[:20]}...: {e}")
+            return False
+
+    async def _remove_cookies_permanently(self, cookies_to_remove: List[str]):
+        """永久移除失效的cookies"""
+        try:
+            if not cookies_to_remove:
+                return
+
+            logger.info(f"Permanently removing {len(cookies_to_remove)} failed cookies")
+
+            async with self.lock:
+                # 从cookies列表中移除
+                original_count = len(self.cookies)
+                self.cookies = [cookie for cookie in self.cookies if cookie not in cookies_to_remove]
+
+                # 从failed_cookies集合中移除
+                for cookie in cookies_to_remove:
+                    self.failed_cookies.discard(cookie)
+                    # 清理cookie_info
+                    if cookie in self.cookie_info:
+                        del self.cookie_info[cookie]
+
+                    # 同时清理可能的token映射
+                    token = self._extract_token(cookie)
+                    if token and token in self.cookie_info:
+                        del self.cookie_info[token]
+
+                removed_count = original_count - len(self.cookies)
+                logger.warning(f"Removed {removed_count} permanently failed cookies, {len(self.cookies)} cookies remaining")
+
+            # 更新配置
+            await self._update_configuration()
+
+        except Exception as e:
+            logger.error(f"Error removing cookies permanently: {e}")
+
+    async def _update_configuration(self):
+        """更新cookie配置（优先内存settings，.env文件可选）"""
+        try:
+            import os
+            from dotenv import set_key
+
+            # 更新内存中的settings对象（这是最重要的）
+            from config import settings
+            if settings:
+                settings.COOKIES = self.cookies
+                logger.info(f"Updated in-memory settings with {len(self.cookies)} cookies")
+
+            # 尝试更新.env文件（仅在文件存在时）
+            env_file = os.path.join(os.getcwd(), '.env')
+            if os.path.exists(env_file):
+                cookies_str = ','.join(self.cookies)
+                set_key(env_file, 'Z_AI_COOKIES', cookies_str)
+                logger.info(f"Updated .env file with {len(self.cookies)} cookies")
+            else:
+                logger.info("No .env file found - running in containerized environment, settings updated in memory only")
+
+                # 在Docker环境中，我们无法直接修改环境变量，但可以记录变更
+                logger.info(f"Container deployment detected - cookie changes will persist until container restart")
+                logger.info(f"Current active cookies: {len(self.cookies)}")
+
+                # 可选：输出当前的cookie列表供管理员参考（仅前20个字符）
+                if logger.isEnabledFor(logging.INFO):
+                    for i, cookie in enumerate(self.cookies[:5]):  # 只显示前5个
+                        preview = cookie[:20] + "..." if len(cookie) > 20 else cookie
+                        logger.info(f"  Cookie {i+1}: {preview}")
+                    if len(self.cookies) > 5:
+                        logger.info(f"  ... and {len(self.cookies) - 5} more cookies")
+
+        except Exception as e:
+            logger.error(f"Error updating configuration: {e}")
+            # 即使更新配置失败，也要确保内存中的settings是最新的
+            try:
+                from config import settings
+                if settings:
+                    settings.COOKIES = self.cookies
+                    logger.info("Fallback: Updated in-memory settings only")
+            except Exception as fallback_error:
+                logger.error(f"Critical: Failed to update even in-memory settings: {fallback_error}")
 
 # Global cookie manager instance
 cookie_manager = CookieManager(settings.COOKIES if settings else [])

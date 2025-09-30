@@ -5,22 +5,22 @@ services:
     ports:
       - "3002:8000"
     environment:
-      - HOST=${HOST:-0.0.0.0} # 监听地址
-      - PORT=${PORT:-8000} # 监听端口
-      - API_KEY=${API_KEY:-sk-z2api-key-2024} # 鉴权密钥
-      - ADMIN_ACCESS_KEY=${ADMIN_ACCESS_KEY:-admin123} # 管理面板访问密钥
-      - DEFAULT_STREAM=${DEFAULT_STREAM:-false} # 流式
-      - Z_AI_COOKIES=${Z_AI_COOKIES} # Z.AI的JWT令牌
-      - LOG_LEVEL=${LOG_LEVEL:-ERROR} # 日志级别
+      - HOST=0.0.0.0 # 监听地址
+      - PORT=8000 # 监听端口
+      - API_KEY=sk-z2api-key-2024 # 鉴权密钥
+      - ADMIN_ACCESS_KEY=admin123 # 管理面板访问密钥
+      - DEFAULT_STREAM=false # 流式
+      - Z_AI_COOKIES= # Z.AI的JWT令牌
+      - LOG_LEVEL=ERROR # 日志级别
 
       # 自动刷新设置
-      - AUTO_REFRESH_TOKENS=${AUTO_REFRESH_TOKENS:-false} # 是否自动刷新令牌
-      - REFRESH_CHECK_INTERVAL=${REFRESH_CHECK_INTERVAL:-3600} # 刷新检查间隔(秒)
+      - AUTO_REFRESH_TOKENS=false # 是否自动刷新令牌
+      - REFRESH_CHECK_INTERVAL=3600 # 刷新检查间隔(秒)
       
       # 连接池设置
-      - MAX_CONNECTIONS=${MAX_CONNECTIONS:-50} # 最大连接数
-      - MAX_KEEPALIVE_CONNECTIONS=${MAX_KEEPALIVE_CONNECTIONS:-20} # 最大保持活动连接数
-      - KEEPALIVE_EXPIRY=${KEEPALIVE_EXPIRY:-30} # 连接保持时间(秒)
+      - MAX_CONNECTIONS=500 # 最大连接数
+      - MAX_KEEPALIVE_CONNECTIONS=300 # 最大保持活动连接数
+      - KEEPALIVE_EXPIRY=10 # 连接保持时间(秒)
     volumes:
       # 可选：挂载日志目录
       - logs:/app/logs

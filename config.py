@@ -15,14 +15,23 @@ class Settings:
     # Z.AI settings
     UPSTREAM_URL: str = "https://chat.z.ai/api/chat/completions"
     UPSTREAM_MODEL: str = "0727-360B-API"
+    UPSTREAM_MODEL_46: str = "GLM-4-6-API-V1"
 
     # Model settings (OpenAI SDK compatible)
     MODEL_NAME: str = "GLM-4.5"
     MODEL_ID: str = "GLM-4.5"
-    
+
     # Thinking model support
     THINKING_MODEL_NAME: str = "GLM-4.5-thinking"
     THINKING_MODEL_ID: str = "GLM-4.5-thinking"
+
+    # GLM-4.6 model support
+    MODEL_46_NAME: str = "GLM-4.6"
+    MODEL_46_ID: str = "GLM-4.6"
+
+    # GLM-4.6 thinking model support
+    THINKING_MODEL_46_NAME: str = "GLM-4.6-thinking"
+    THINKING_MODEL_46_ID: str = "GLM-4.6-thinking"
 
     # API Key for external authentication
     API_KEY: str = os.getenv("API_KEY", "sk-z2api-key-2024")

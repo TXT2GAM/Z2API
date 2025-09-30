@@ -60,5 +60,6 @@ https://0.0.0.0:8000/admin
 
 `GLM-4.5`
 `GLM-4.5-thinking`
-
+`GLM-4.6`
+`GLM-4.6-thinking`
 ---

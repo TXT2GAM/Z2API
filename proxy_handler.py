@@ -93,12 +93,18 @@ class ProxyHandler:
             raise HTTPException(status_code=503, detail="No available cookies")
 
         # Transform model name and check if thinking is enabled
-        is_thinking_model = request.model == settings.THINKING_MODEL_NAME
-        target_model = (
-            settings.UPSTREAM_MODEL
-            if request.model in [settings.MODEL_NAME, settings.THINKING_MODEL_NAME]
-            else request.model
-        )
+        is_thinking_model = request.model in [
+            settings.THINKING_MODEL_NAME,
+            settings.THINKING_MODEL_46_NAME
+        ]
+
+        # Map model to upstream model
+        if request.model in [settings.MODEL_46_NAME, settings.THINKING_MODEL_46_NAME]:
+            target_model = settings.UPSTREAM_MODEL_46
+        elif request.model in [settings.MODEL_NAME, settings.THINKING_MODEL_NAME]:
+            target_model = settings.UPSTREAM_MODEL
+        else:
+            target_model = request.model
 
         # Determine if this should be a streaming response
         is_streaming = (
@@ -461,8 +467,18 @@ class ProxyHandler:
         request_data_dict = request.model_dump(exclude_none=True)
         
         # Check if thinking is enabled
-        is_thinking_model = request.model == settings.THINKING_MODEL_NAME
-        target_model = "0727-360B-API"  # Map GLM-4.5 and GLM-4.5-thinking to Z.AI model
+        is_thinking_model = request.model in [
+            settings.THINKING_MODEL_NAME,
+            settings.THINKING_MODEL_46_NAME
+        ]
+
+        # Map model to upstream model
+        if request.model in [settings.MODEL_46_NAME, settings.THINKING_MODEL_46_NAME]:
+            target_model = settings.UPSTREAM_MODEL_46
+        elif request.model in [settings.MODEL_NAME, settings.THINKING_MODEL_NAME]:
+            target_model = "0727-360B-API"
+        else:
+            target_model = request.model
 
         # Build Z.AI request format
         request_data = {
